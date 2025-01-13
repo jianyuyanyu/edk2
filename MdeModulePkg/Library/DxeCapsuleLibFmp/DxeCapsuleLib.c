@@ -10,7 +10,8 @@
   ValidateFmpCapsule(), and DisplayCapsuleImage() receives untrusted input and
   performs basic validation.
 
-  Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2016 - 2024, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2024, Ampere Computing LLC. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -41,13 +42,14 @@
 #include <Protocol/FirmwareManagementProgress.h>
 #include <Protocol/DevicePath.h>
 
-EFI_SYSTEM_RESOURCE_TABLE  *mEsrtTable             = NULL;
-BOOLEAN                    mIsVirtualAddrConverted = FALSE;
+EFI_SYSTEM_RESOURCE_TABLE  *mEsrtTable = NULL;
 
 BOOLEAN    mDxeCapsuleLibEndOfDxe      = FALSE;
 EFI_EVENT  mDxeCapsuleLibEndOfDxeEvent = NULL;
 
 EDKII_FIRMWARE_MANAGEMENT_PROGRESS_PROTOCOL  *mFmpProgress = NULL;
+
+BOOLEAN  mDxeCapsuleLibIsExitBootService = FALSE;
 
 /**
   Initialize capsule related variables.
@@ -1394,7 +1396,7 @@ IsNestedFmpCapsule (
   EFI_SYSTEM_RESOURCE_ENTRY  Entry;
 
   EsrtGuidFound = FALSE;
-  if (mIsVirtualAddrConverted) {
+  if (mDxeCapsuleLibIsExitBootService) {
     if (mEsrtTable != NULL) {
       EsrtEntry = (EFI_SYSTEM_RESOURCE_ENTRY *)(mEsrtTable + 1);
       for (Index = 0; Index < mEsrtTable->FwResourceCount; Index++, EsrtEntry++) {

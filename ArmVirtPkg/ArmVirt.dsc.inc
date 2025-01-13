@@ -37,7 +37,7 @@
 !if $(TARGET) == RELEASE
   DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
 !else
-  DebugLib|MdePkg/Library/BaseDebugLibSerialPort/BaseDebugLibSerialPort.inf
+  DebugLib|ArmVirtPkg/Library/DebugLibFdtPL011Uart/DebugLibFdtPL011UartRam.inf
 !endif
   DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
 
@@ -52,6 +52,7 @@
   IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsicArmVirt.inf
   UefiDecompressLib|MdePkg/Library/BaseUefiDecompressLib/BaseUefiDecompressLib.inf
   CpuLib|MdePkg/Library/BaseCpuLib/BaseCpuLib.inf
+  ImagePropertiesRecordLib|MdeModulePkg/Library/ImagePropertiesRecordLib/ImagePropertiesRecordLib.inf
 
   UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
   HobLib|ArmVirtPkg/Library/ArmVirtDxeHobLib/ArmVirtDxeHobLib.inf
@@ -86,19 +87,9 @@
 
   # Networking Requirements
 !include NetworkPkg/NetworkLibs.dsc.inc
-!if $(NETWORK_TLS_ENABLE) == TRUE
-  TlsLib|CryptoPkg/Library/TlsLib/TlsLib.inf
+!if ($(NETWORK_TLS_ENABLE) == TRUE) AND ($(ARCH) == ARM)
+  !error "NETWORK_TLS_ENABLE is not supported on ARM build!"
 !endif
-
-
-  #
-  # It is not possible to prevent the ARM compiler from inserting calls to intrinsic functions.
-  # This library provides the instrinsic functions such a compiler may generate calls to.
-  #
-  NULL|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
-
-  # Add support for GCC stack protector
-  NULL|MdePkg/Library/BaseStackCheckLib/BaseStackCheckLib.inf
 
   # ARM Architectural Libraries
   CacheMaintenanceLib|ArmPkg/Library/ArmCacheMaintenanceLib/ArmCacheMaintenanceLib.inf
@@ -113,7 +104,7 @@
 
   PlatformPeiLib|ArmVirtPkg/Library/PlatformPeiLib/PlatformPeiLib.inf
   MemoryInitPeiLib|ArmVirtPkg/Library/ArmVirtMemoryInitPeiLib/ArmVirtMemoryInitPeiLib.inf
-  ResetSystemLib|ArmVirtPkg/Library/ArmVirtPsciResetSystemLib/ArmVirtPsciResetSystemLib.inf
+  ResetSystemLib|ArmPkg/Library/ArmPsciResetSystemLib/ArmPsciResetSystemLib.inf
 
   # ARM PL031 RTC Driver
   RealTimeClockLib|ArmPlatformPkg/Library/PL031RealTimeClockLib/PL031RealTimeClockLib.inf
@@ -121,6 +112,7 @@
   # ARM PL011 UART Driver
   PL011UartLib|ArmPlatformPkg/Library/PL011UartLib/PL011UartLib.inf
   SerialPortLib|ArmVirtPkg/Library/FdtPL011SerialPortLib/FdtPL011SerialPortLib.inf
+  FdtSerialPortAddressLib|OvmfPkg/Library/FdtSerialPortAddressLib/FdtSerialPortAddressLib.inf
 
   PeCoffExtraActionLib|ArmPkg/Library/DebugPeCoffExtraActionLib/DebugPeCoffExtraActionLib.inf
   #PeCoffExtraActionLib|MdePkg/Library/BasePeCoffExtraActionLibNull/BasePeCoffExtraActionLibNull.inf
@@ -153,8 +145,9 @@
 !else
   OpensslLib|CryptoPkg/Library/OpensslLib/OpensslLibCrypto.inf
 !endif
-  BaseCryptLib|CryptoPkg/Library/BaseCryptLib/BaseCryptLib.inf
-  RngLib|MdePkg/Library/BaseRngLibTimerLib/BaseRngLibTimerLib.inf
+  RngLib|MdePkg/Library/BaseRngLib/BaseRngLib.inf
+  ArmTrngLib|ArmPkg/Library/ArmTrngLib/ArmTrngLib.inf
+  ArmMonitorLib|ArmPkg/Library/ArmMonitorLib/ArmMonitorLib.inf
 
   #
   # Secure Boot dependencies
@@ -188,6 +181,9 @@
   PeiServicesLib|MdePkg/Library/PeiServicesLib/PeiServicesLib.inf
   PeiServicesTablePointerLib|ArmPkg/Library/PeiServicesTablePointerLib/PeiServicesTablePointerLib.inf
   MemoryAllocationLib|MdePkg/Library/PeiMemoryAllocationLib/PeiMemoryAllocationLib.inf
+!if $(TARGET) != RELEASE
+  DebugLib|ArmVirtPkg/Library/DebugLibFdtPL011Uart/DebugLibFdtPL011UartFlash.inf
+!endif
 
 [LibraryClasses.common.PEI_CORE]
   PcdLib|MdePkg/Library/PeiPcdLib/PeiPcdLib.inf
@@ -203,6 +199,9 @@
 
   PeiServicesTablePointerLib|ArmPkg/Library/PeiServicesTablePointerLib/PeiServicesTablePointerLib.inf
   SerialPortLib|ArmVirtPkg/Library/FdtPL011SerialPortLib/EarlyFdtPL011SerialPortLib.inf
+!if $(TARGET) != RELEASE
+  DebugLib|ArmVirtPkg/Library/DebugLibFdtPL011Uart/DebugLibFdtPL011UartFlash.inf
+!endif
 
 [LibraryClasses.common.PEIM]
   PcdLib|MdePkg/Library/PeiPcdLib/PeiPcdLib.inf
@@ -218,6 +217,13 @@
 
   PeiServicesTablePointerLib|ArmPkg/Library/PeiServicesTablePointerLib/PeiServicesTablePointerLib.inf
   SerialPortLib|ArmVirtPkg/Library/FdtPL011SerialPortLib/EarlyFdtPL011SerialPortLib.inf
+!if $(TARGET) != RELEASE
+  DebugLib|ArmVirtPkg/Library/DebugLibFdtPL011Uart/DebugLibFdtPL011UartFlash.inf
+!endif
+
+[LibraryClasses.common.UEFI_DRIVER]
+  # resolve RngLib via RngDxe's EFI_RNG_PROTOCOL for UEFI_DRIVER type drivers such as TlsDxe
+  RngLib|MdePkg/Library/DxeRngLib/DxeRngLib.inf
 
 [LibraryClasses.common.DXE_CORE]
   HobLib|MdePkg/Library/DxeCoreHobLib/DxeCoreHobLib.inf
@@ -245,16 +251,24 @@
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
   CapsuleLib|MdeModulePkg/Library/DxeCapsuleLibNull/DxeCapsuleLibNull.inf
 !if $(TARGET) != RELEASE
-  DebugLib|MdePkg/Library/DxeRuntimeDebugLibSerialPort/DxeRuntimeDebugLibSerialPort.inf
+  DebugLib|ArmVirtPkg/Library/DebugLibFdtPL011Uart/DxeRuntimeDebugLibFdtPL011Uart.inf
 !endif
   VariablePolicyLib|MdeModulePkg/Library/VariablePolicyLib/VariablePolicyLibRuntimeDxe.inf
 
-!if $(SECURE_BOOT_ENABLE) == TRUE
+[LibraryClasses.AARCH64.DXE_RUNTIME_DRIVER]
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/RuntimeCryptLib.inf
-!endif
+
+[LibraryClasses.ARM.DXE_RUNTIME_DRIVER]
+  BaseCryptLib|CryptoPkg/Library/BaseCryptLibMbedTls/RuntimeCryptLib.inf
+
+[LibraryClasses.AARCH64]
+  BaseCryptLib|CryptoPkg/Library/BaseCryptLib/BaseCryptLib.inf
+  TlsLib|CryptoPkg/Library/TlsLib/TlsLib.inf
 
 [LibraryClasses.ARM]
-  ArmSoftFloatLib|ArmPkg/Library/ArmSoftFloatLib/ArmSoftFloatLib.inf
+  BaseCryptLib|CryptoPkg/Library/BaseCryptLibMbedTls/BaseCryptLib.inf
+  MbedTlsLib|CryptoPkg/Library/MbedTlsLib/MbedTlsLib.inf
+  RngLib|MdePkg/Library/BaseRngLibTimerLib/BaseRngLibTimerLib.inf
 
 [BuildOptions]
   GCC:RELEASE_*_*_CC_FLAGS  = -DMDEPKG_NDEBUG
@@ -282,6 +296,12 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdInstallAcpiSdtProtocol|TRUE
 
 [PcdsFixedAtBuild.common]
+  gArmTokenSpaceGuid.PcdMonitorConduitHvc|TRUE
+
+!ifdef $(FIRMWARE_VER)
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString|L"$(FIRMWARE_VER)"
+!endif
+
   gEfiMdePkgTokenSpaceGuid.PcdMaximumUnicodeStringLength|1000000
   gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|1000000
   gEfiMdePkgTokenSpaceGuid.PcdMaximumLinkedListLength|0
@@ -300,26 +320,28 @@
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
 !endif
 
-  #  DEBUG_INIT      0x00000001  // Initialization
-  #  DEBUG_WARN      0x00000002  // Warnings
-  #  DEBUG_LOAD      0x00000004  // Load events
-  #  DEBUG_FS        0x00000008  // EFI File system
-  #  DEBUG_POOL      0x00000010  // Alloc & Free (pool)
-  #  DEBUG_PAGE      0x00000020  // Alloc & Free (page)
-  #  DEBUG_INFO      0x00000040  // Informational debug messages
-  #  DEBUG_DISPATCH  0x00000080  // PEI/DXE/SMM Dispatchers
-  #  DEBUG_VARIABLE  0x00000100  // Variable
-  #  DEBUG_BM        0x00000400  // Boot Manager
-  #  DEBUG_BLKIO     0x00001000  // BlkIo Driver
-  #  DEBUG_NET       0x00004000  // SNP Driver
-  #  DEBUG_UNDI      0x00010000  // UNDI Driver
-  #  DEBUG_LOADFILE  0x00020000  // LoadFile
-  #  DEBUG_EVENT     0x00080000  // Event messages
-  #  DEBUG_GCD       0x00100000  // Global Coherency Database changes
-  #  DEBUG_CACHE     0x00200000  // Memory range cachability changes
-  #  DEBUG_VERBOSE   0x00400000  // Detailed debug messages that may
-  #                              // significantly impact boot performance
-  #  DEBUG_ERROR     0x80000000  // Error
+  #  DEBUG_INIT           0x00000001  // Initialization
+  #  DEBUG_WARN           0x00000002  // Warnings
+  #  DEBUG_LOAD           0x00000004  // Load events
+  #  DEBUG_FS             0x00000008  // EFI File system
+  #  DEBUG_POOL           0x00000010  // Alloc & Free (pool)
+  #  DEBUG_PAGE           0x00000020  // Alloc & Free (page)
+  #  DEBUG_INFO           0x00000040  // Informational debug messages
+  #  DEBUG_DISPATCH       0x00000080  // PEI/DXE/SMM Dispatchers
+  #  DEBUG_VARIABLE       0x00000100  // Variable
+  #  DEBUG_BM             0x00000400  // Boot Manager
+  #  DEBUG_BLKIO          0x00001000  // BlkIo Driver
+  #  DEBUG_NET            0x00004000  // Network Io Driver
+  #  DEBUG_UNDI           0x00010000  // UNDI Driver
+  #  DEBUG_LOADFILE       0x00020000  // LoadFile
+  #  DEBUG_EVENT          0x00080000  // Event messages
+  #  DEBUG_GCD            0x00100000  // Global Coherency Database changes
+  #  DEBUG_CACHE          0x00200000  // Memory range cachability changes
+  #  DEBUG_VERBOSE        0x00400000  // Detailed debug messages that may
+  #                                   // significantly impact boot performance
+  #  DEBUG_MANAGEABILITY  0x00800000  // Detailed debug and payload manageability messages
+  #                                   // related to modules such as Redfish, IPMI, MCTP etc.
+  #  DEBUG_ERROR          0x80000000  // Error
 !if $(TARGET) != RELEASE
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|$(DEBUG_PRINT_ERROR_LEVEL)
 !endif
@@ -358,8 +380,10 @@
 
   #
   # Enable NX memory protection for all non-code regions, including OEM and OS
-  # reserved ones, with the exception of LoaderData regions, of which OS loaders
-  # (i.e., GRUB) may assume that its contents are executable.
+  # reserved ones.
+  # By passing --pcd PcdDxeNxMemoryProtectionPolicy=0xC000000000007FD1 on the
+  # build command line you can allow code execution in EfiLoaderData. This is
+  # required when using some outdated GRUB versions.
   #
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeNxMemoryProtectionPolicy|0xC000000000007FD5
 
@@ -376,6 +400,10 @@
       gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
   }
   ShellPkg/DynamicCommand/HttpDynamicCommand/HttpDynamicCommand.inf {
+    <PcdsFixedAtBuild>
+      gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
+  }
+  ShellPkg/DynamicCommand/VariablePolicyDynamicCommand/VariablePolicyDynamicCommand.inf {
     <PcdsFixedAtBuild>
       gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
   }

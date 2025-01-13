@@ -222,7 +222,7 @@ GopNativeResolution (
     DEBUG ((
       DEBUG_INFO,
       "%a: #%d: %dx%d\n",
-      __FUNCTION__,
+      __func__,
       Index,
       DisplayInfo.Pmodes[Index].Rectangle.Width,
       DisplayInfo.Pmodes[Index].Rectangle.Height
@@ -265,7 +265,8 @@ GopInitialize (
   // query host for display resolution
   //
   GopNativeResolution (VgpuGop, &XRes, &YRes);
-  if ((XRes == 0) || (YRes == 0)) {
+  if ((XRes < 640) || (YRes < 480)) {
+    /* ignore hint, GraphicsConsoleDxe needs 640x480 or larger */
     return;
   }
 

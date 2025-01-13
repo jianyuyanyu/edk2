@@ -45,6 +45,7 @@
   DEFINE NETWORK_TLS_ENABLE             = FALSE
   DEFINE NETWORK_ALLOW_HTTP_CONNECTIONS = TRUE
   DEFINE NETWORK_ISCSI_ENABLE           = FALSE
+  DEFINE NETWORK_PXE_BOOT_ENABLE        = TRUE
 
 !if $(NETWORK_SNP_ENABLE) == TRUE
   !error "NETWORK_SNP_ENABLE is IA32/X64/EBC only"
@@ -52,6 +53,7 @@
 
 
 !include MdePkg/MdeLibs.dsc.inc
+!include NetworkPkg/Network.dsc.inc
 
 [BuildOptions]
   GCC:RELEASE_*_*_CC_FLAGS       = -DMDEPKG_NDEBUG
@@ -69,8 +71,6 @@
 #
 ################################################################################
 
-!include NetworkPkg/NetworkDefines.dsc.inc
-
 !include OvmfPkg/RiscVVirt/RiscVVirt.dsc.inc
 
 !include MdePkg/MdeLibs.dsc.inc
@@ -79,13 +79,13 @@
   # Virtio Support
   VirtioLib|OvmfPkg/Library/VirtioLib/VirtioLib.inf
   VirtioMmioDeviceLib|OvmfPkg/Library/VirtioMmioDeviceLib/VirtioMmioDeviceLib.inf
-  QemuFwCfgLib|OvmfPkg/Library/QemuFwCfgLib/QemuFwCfgLibMmio.inf
+  QemuFwCfgLib|OvmfPkg/Library/QemuFwCfgLib/QemuFwCfgMmioDxeLib.inf
   QemuFwCfgS3Lib|OvmfPkg/Library/QemuFwCfgS3Lib/BaseQemuFwCfgS3LibNull.inf
   QemuFwCfgSimpleParserLib|OvmfPkg/Library/QemuFwCfgSimpleParserLib/QemuFwCfgSimpleParserLib.inf
   QemuLoadImageLib|OvmfPkg/Library/GenericQemuLoadImageLib/GenericQemuLoadImageLib.inf
 
   TimerLib|UefiCpuPkg/Library/BaseRiscV64CpuTimerLib/BaseRiscV64CpuTimerLib.inf
-  VirtNorFlashPlatformLib|OvmfPkg/RiscVVirt/Library/VirtNorFlashPlatformLib/VirtNorFlashStaticLib.inf
+  VirtNorFlashPlatformLib|OvmfPkg/RiscVVirt/Library/VirtNorFlashPlatformLib/VirtNorFlashDeviceTreeLib.inf
 
   CapsuleLib|MdeModulePkg/Library/DxeCapsuleLibNull/DxeCapsuleLibNull.inf
   BootLogoLib|MdeModulePkg/Library/BootLogoLib/BootLogoLib.inf
@@ -101,6 +101,7 @@
   PciHostBridgeUtilityLib|OvmfPkg/Library/PciHostBridgeUtilityLib/PciHostBridgeUtilityLib.inf
   PeiHardwareInfoLib|OvmfPkg/Library/HardwareInfoLib/PeiHardwareInfoLib.inf
   PlatformHookLib|MdeModulePkg/Library/BasePlatformHookLibNull/BasePlatformHookLibNull.inf
+  ImagePropertiesRecordLib|MdeModulePkg/Library/ImagePropertiesRecordLib/ImagePropertiesRecordLib.inf
 
 !if $(TPM2_ENABLE) == TRUE
   Tpm2CommandLib|SecurityPkg/Library/Tpm2CommandLib/Tpm2CommandLib.inf
@@ -113,6 +114,7 @@
 !endif
 
 [LibraryClasses.common.DXE_DRIVER]
+  AcpiPlatformLib|OvmfPkg/Library/AcpiPlatformLib/DxeAcpiPlatformLib.inf
   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf
   PciExpressLib|OvmfPkg/Library/BaseCachingPciExpressLib/BaseCachingPciExpressLib.inf
 
@@ -123,8 +125,6 @@
 [LibraryClasses.common.UEFI_DRIVER]
   UefiScsiLib|MdePkg/Library/UefiScsiLib/UefiScsiLib.inf
   PciExpressLib|OvmfPkg/Library/BaseCachingPciExpressLib/BaseCachingPciExpressLib.inf
-
-#!include NetworkPkg/NetworkBuildOptions.dsc.inc
 
 ################################################################################
 #
@@ -164,19 +164,8 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialClockRate|3686400
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterStride|1
 
-  #
-  # Network Pcds
-  #
-!include NetworkPkg/NetworkPcds.dsc.inc
-
   gEfiMdeModulePkgTokenSpaceGuid.PcdResetOnMemoryTypeInformationChange|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x21, 0xaa, 0x2c, 0x46, 0x14, 0x76, 0x03, 0x45, 0x83, 0x6e, 0x8a, 0xb6, 0xf4, 0x66, 0x23, 0x31 }
-
-
-  #
-  # Enable the non-executable DXE stack. (This gets set up by DxeIpl)
-  #
-  gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
 
 !if $(SECURE_BOOT_ENABLE) == TRUE
   # override the default values from SecurityPkg to ensure images from all sources are verified in secure boot
@@ -229,11 +218,7 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0
 
-  #
-  # IPv4 and IPv6 PXE Boot support.
-  #
-  gEfiNetworkPkgTokenSpaceGuid.PcdIPv4PXESupport|0x01
-  gEfiNetworkPkgTokenSpaceGuid.PcdIPv6PXESupport|0x01
+!include NetworkPkg/NetworkDynamicPcds.dsc.inc
 
   #
   # TPM2 support
@@ -403,15 +388,12 @@
       NULL|OvmfPkg/Library/BlobVerifierLibNull/BlobVerifierLibNull.inf
   }
 
-  #
-  # Networking stack
-  #
-!include NetworkPkg/NetworkComponents.dsc.inc
-
+!if $(NETWORK_PXE_BOOT_ENABLE) == TRUE
   NetworkPkg/UefiPxeBcDxe/UefiPxeBcDxe.inf {
     <LibraryClasses>
       NULL|OvmfPkg/Library/PxeBcPcdProducerLib/PxeBcPcdProducerLib.inf
   }
+!endif
 
 !if $(NETWORK_TLS_ENABLE) == TRUE
   NetworkPkg/TlsAuthConfigDxe/TlsAuthConfigDxe.inf {
@@ -450,7 +432,7 @@
   #
   # PCI support
   #
-  OvmfPkg/RiscVVirt/PciCpuIo2Dxe/PciCpuIo2Dxe.inf {
+  UefiCpuPkg/CpuMmio2Dxe/CpuMmio2Dxe.inf {
     <LibraryClasses>
       NULL|OvmfPkg/Fdt/FdtPciPcdProducerLib/FdtPciPcdProducerLib.inf
   }

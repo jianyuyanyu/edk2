@@ -111,6 +111,8 @@ ShellCommandRunDblk (
   UINT64                    BlockCount;
   EFI_DEVICE_PATH_PROTOCOL  *DevPath;
 
+  Lba         = 0;
+  BlockCount  = 0;
   ShellStatus = SHELL_SUCCESS;
   Status      = EFI_SUCCESS;
 
@@ -158,7 +160,10 @@ ShellCommandRunDblk (
           ShellStatus = SHELL_INVALID_PARAMETER;
         }
 
-        ShellConvertStringToUint64 (LbaString, &Lba, TRUE, FALSE);
+        if (EFI_ERROR (ShellConvertStringToUint64 (LbaString, &Lba, TRUE, FALSE))) {
+          ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_GEN_PARAM_INV), gShellDebug1HiiHandle, L"dblk", LbaString);
+          ShellStatus = SHELL_INVALID_PARAMETER;
+        }
       }
 
       if (BlockCountString == NULL) {
@@ -169,12 +174,13 @@ ShellCommandRunDblk (
           ShellStatus = SHELL_INVALID_PARAMETER;
         }
 
-        ShellConvertStringToUint64 (BlockCountString, &BlockCount, TRUE, FALSE);
-        if (BlockCount > 0x10) {
-          BlockCount = 0x10;
-        } else if (BlockCount == 0) {
-          ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_GEN_PARAM_INV), gShellDebug1HiiHandle, L"dblk", BlockCountString);
-          ShellStatus = SHELL_INVALID_PARAMETER;
+        if (!EFI_ERROR (ShellConvertStringToUint64 (BlockCountString, &BlockCount, TRUE, FALSE))) {
+          if (BlockCount > 0x10) {
+            BlockCount = 0x10;
+          } else if (BlockCount == 0) {
+            ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_GEN_PARAM_INV), gShellDebug1HiiHandle, L"dblk", BlockCountString);
+            ShellStatus = SHELL_INVALID_PARAMETER;
+          }
         }
       }
 
@@ -182,7 +188,7 @@ ShellCommandRunDblk (
         //
         // do the work if we have a valid block identifier
         //
-        if (gEfiShellProtocol->GetDevicePathFromMap (BlockName) == NULL) {
+        if ((BlockName == NULL) || (gEfiShellProtocol->GetDevicePathFromMap (BlockName) == NULL)) {
           ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_GEN_PARAM_INV), gShellDebug1HiiHandle, L"dblk", BlockName);
           ShellStatus = SHELL_INVALID_PARAMETER;
         } else {

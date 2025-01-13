@@ -4,8 +4,9 @@
   Copyright (c) 2009 - 2019, Intel Corporation. All rights reserved.<BR>
   (C) Copyright 2013-2014 Hewlett-Packard Development Company, L.P.<BR>
   Copyright 2015-2018 Dell Technologies.<BR>
-  SPDX-License-Identifier: BSD-2-Clause-Patent
+  Copyright (C) 2023, Apple Inc. All rights reserved.<BR>
 
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "Shell.h"
@@ -575,6 +576,11 @@ UefiMain (
 
     Size       = 100;
     TempString = AllocateZeroPool (Size);
+    if (TempString == NULL) {
+      ASSERT (TempString != NULL);
+      Status = EFI_OUT_OF_RESOURCES;
+      goto FreeResources;
+    }
 
     UnicodeSPrint (TempString, Size, L"%d", PcdGet8 (PcdShellSupportLevel));
     Status = InternalEfiShellSetEnv (L"uefishellsupport", TempString, TRUE);
@@ -1300,6 +1306,7 @@ DoStartupScript (
   CHAR16         *FullFileStringPath;
   UINTN          NewSize;
 
+  CalleeStatus    = EFI_SUCCESS;
   Key.UnicodeChar = CHAR_NULL;
   Key.ScanCode    = 0;
 
@@ -2607,10 +2614,15 @@ RunCommandOrFile (
         CommandWithPath = ShellFindFilePathEx (FirstParameter, mExecutableExtensions);
       }
 
-      //
-      // This should be impossible now.
-      //
-      ASSERT (CommandWithPath != NULL);
+      if (CommandWithPath == NULL) {
+        //
+        // This should be impossible now.
+        //
+        ASSERT (CommandWithPath != NULL);
+        ShellPrintHiiEx (-1, -1, NULL, STRING_TOKEN (STR_SHELL_NOT_FOUND), ShellInfoObject.HiiHandle, FirstParameter);
+        SetLastError (SHELL_NOT_FOUND);
+        return EFI_NOT_FOUND;
+      }
 
       //
       // Make sure that path is not just a directory (or not found)
@@ -2943,7 +2955,7 @@ RunScriptFileHandle (
   ASSERT (!ShellCommandGetScriptExit ());
 
   PreScriptEchoState = ShellCommandGetEchoState ();
-  PrintBuffSize      = PcdGet16 (PcdShellPrintBufferSize);
+  PrintBuffSize      = PcdGet32 (PcdShellPrintBufferSize);
 
   NewScriptFile = (SCRIPT_FILE *)AllocateZeroPool (sizeof (SCRIPT_FILE));
   if (NewScriptFile == NULL) {
@@ -3328,8 +3340,8 @@ FindFirstCharacter (
   IN CONST CHAR16  EscapeCharacter
   )
 {
-  UINT32  WalkChar;
-  UINT32  WalkStr;
+  UINTN  WalkChar;
+  UINTN  WalkStr;
 
   for (WalkStr = 0; WalkStr < StrLen (String); WalkStr++) {
     if (String[WalkStr] == EscapeCharacter) {

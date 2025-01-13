@@ -20,30 +20,6 @@ EFI_MEMORY_TYPE_INFORMATION  mDefaultMemoryTypeInformation[] = {
 };
 
 /**
-   Function to reserve memory below 4GB for EDKII Modules.
-
-   This causes the DXE to dispatch everything under 4GB and allows Operating
-   System's that require EFI_LOADED_IMAGE to be under 4GB to start.
-   e.g. Xen hypervisor used in Qubes.
-**/
-VOID
-ForceModulesBelow4G (
-  VOID
-  )
-{
-  DEBUG ((DEBUG_INFO, "Building hob to restrict memory resorces to below 4G.\n"));
-
-  //
-  // Create Memory Type Information HOB
-  //
-  BuildGuidDataHob (
-    &gEfiMemoryTypeInformationGuid,
-    mDefaultMemoryTypeInformation,
-    sizeof (mDefaultMemoryTypeInformation)
-    );
-}
-
-/**
    Callback function to build resource descriptor HOB
 
    This function build a HOB based on the memory map entry info.
@@ -456,6 +432,14 @@ _ModuleEntryPoint (
     UniversalSerialPort->RegisterBase    = SerialPortInfo.BaseAddr;
     UniversalSerialPort->BaudRate        = SerialPortInfo.Baud;
     UniversalSerialPort->RegisterStride  = (UINT8)SerialPortInfo.RegWidth;
+    // Set PCD here (vs in PlatformHookLib.c) to avoid adding a new field to UniversalSerialPort struct
+    if (SerialPortInfo.InputHertz > 0) {
+      Status = PcdSet32S (PcdSerialClockRate, SerialPortInfo.InputHertz);
+      if (RETURN_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "Failed to set PcdSerialClockRate; Status = %r\n", Status));
+        return Status;
+      }
+    }
   }
 
   // The library constructors might depend on serial port, so call it after serial port hob
@@ -472,10 +456,14 @@ _ModuleEntryPoint (
   // Build other HOBs required by DXE
   BuildGenericHob ();
 
-  // Create a HOB to make resources for EDKII modules below 4G
-  if (!FixedPcdGetBool (PcdDispatchModuleAbove4GMemory)) {
-    ForceModulesBelow4G ();
-  }
+  //
+  // Create Memory Type Information HOB
+  //
+  BuildGuidDataHob (
+    &gEfiMemoryTypeInformationGuid,
+    mDefaultMemoryTypeInformation,
+    sizeof (mDefaultMemoryTypeInformation)
+    );
 
   // Load the DXE Core
   Status = LoadDxeCore (&DxeCoreEntryPoint);

@@ -274,7 +274,7 @@ InitUnitTestFramework (
       //
       // Don't actually report it as an error, but emit a warning.
       //
-      DEBUG ((DEBUG_ERROR, "%a - Cache was detected, but failed to load.\n", __FUNCTION__));
+      DEBUG ((DEBUG_ERROR, "%a - Cache was detected, but failed to load.\n", __func__));
       Status = EFI_SUCCESS;
     }
   }
@@ -571,9 +571,9 @@ UpdateTestFromSave (
     Test->FailureType = MatchingTest->FailureType;
     AsciiStrnCpyS (
       &Test->FailureMessage[0],
-      UNIT_TEST_TESTFAILUREMSG_LENGTH,
+      UNIT_TEST_MAX_STRING_LENGTH,
       &MatchingTest->FailureMessage[0],
-      UNIT_TEST_TESTFAILUREMSG_LENGTH
+      UNIT_TEST_MAX_STRING_LENGTH
       );
 
     //
@@ -748,7 +748,7 @@ SerializeState (
       //
       TestSaveData->Result      = UnitTest->Result;
       TestSaveData->FailureType = UnitTest->FailureType;
-      AsciiStrnCpyS (&TestSaveData->FailureMessage[0], UNIT_TEST_TESTFAILUREMSG_LENGTH, &UnitTest->FailureMessage[0], UNIT_TEST_TESTFAILUREMSG_LENGTH);
+      AsciiStrnCpyS (&TestSaveData->FailureMessage[0], UNIT_TEST_MAX_STRING_LENGTH, &UnitTest->FailureMessage[0], UNIT_TEST_MAX_STRING_LENGTH);
 
       //
       // If there is a log, save the log.
@@ -826,6 +826,10 @@ SaveFrameworkState (
 
   Header          = NULL;
   FrameworkHandle = GetActiveFrameworkHandle ();
+  if (FrameworkHandle == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a - Could not save state! FrameworkHandle not initialized\n", __func__));
+    return EFI_DEVICE_ERROR;
+  }
 
   //
   // Return a unique error code if the framework is not set.
@@ -856,7 +860,7 @@ SaveFrameworkState (
   //
   Status = SaveUnitTestCache (FrameworkHandle, Header, Header->SaveStateSize);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a - Could not save state! %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "%a - Could not save state! %r\n", __func__, Status));
     Status = EFI_DEVICE_ERROR;
   }
 

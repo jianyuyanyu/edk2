@@ -1,6 +1,6 @@
 /** @file
 *
-*  Copyright (c) 2011-2018, ARM Limited. All rights reserved.
+*  Copyright (c) 2011-2023, Arm Limited. All rights reserved.
 *
 *  SPDX-License-Identifier: BSD-2-Clause-Patent
 *
@@ -156,7 +156,7 @@ GicV3IrqInterruptHandler (
   IN EFI_SYSTEM_CONTEXT  SystemContext
   )
 {
-  UINT32                      GicInterrupt;
+  UINTN                       GicInterrupt;
   HARDWARE_INTERRUPT_HANDLER  InterruptHandler;
 
   GicInterrupt = ArmGicV3AcknowledgeInterrupt ();
@@ -173,7 +173,7 @@ GicV3IrqInterruptHandler (
     // Call the registered interrupt handler.
     InterruptHandler (GicInterrupt, SystemContext);
   } else {
-    DEBUG ((DEBUG_ERROR, "Spurious GIC interrupt: 0x%x\n", GicInterrupt));
+    DEBUG ((DEBUG_ERROR, "Spurious GIC interrupt: 0x%x\n", (UINT32)GicInterrupt));
     GicV3EndOfInterrupt (&gHardwareInterruptV3Protocol, GicInterrupt);
   }
 }
@@ -374,14 +374,13 @@ GicV3DxeInitialize (
 {
   EFI_STATUS  Status;
   UINTN       Index;
-  UINT64      CpuTarget;
   UINT64      MpId;
 
   // Make sure the Interrupt Controller Protocol is not already installed in
   // the system.
   ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gHardwareInterruptProtocolGuid);
 
-  mGicDistributorBase    = PcdGet64 (PcdGicDistributorBase);
+  mGicDistributorBase    = (UINTN)PcdGet64 (PcdGicDistributorBase);
   mGicRedistributorsBase = PcdGet64 (PcdGicRedistributorsBase);
   mGicNumInterrupts      = ArmGicGetMaxNumInterrupts (mGicDistributorBase);
 
@@ -406,6 +405,8 @@ GicV3DxeInitialize (
   // Targets the interrupts to the Primary Cpu
 
   if (FeaturePcdGet (PcdArmGicV3WithV2Legacy)) {
+    UINT32  CpuTarget;
+
     // Only Primary CPU will run this code. We can identify our GIC CPU ID by
     // reading the GIC Distributor Target register. The 8 first
     // GICD_ITARGETSRn are banked to each connected CPU. These 8 registers
@@ -428,6 +429,8 @@ GicV3DxeInitialize (
       }
     }
   } else {
+    UINT64  CpuTarget;
+
     MpId      = ArmReadMpidr ();
     CpuTarget = MpId &
                 (ARM_CORE_AFF0 | ARM_CORE_AFF1 | ARM_CORE_AFF2 | ARM_CORE_AFF3);

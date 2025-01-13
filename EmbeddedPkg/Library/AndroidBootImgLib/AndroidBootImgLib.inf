@@ -26,6 +26,7 @@
   AndroidBootImgLib.c
 
 [LibraryClasses]
+  BaseLib
   DebugLib
   FdtLib
   PrintLib
@@ -45,5 +46,6 @@
   gEfiAcpiTableGuid
   gFdtTableGuid
 
-[FeaturePcd]
+[Pcd]
   gEmbeddedTokenSpaceGuid.PcdAndroidBootLoadFile2
+  gEmbeddedTokenSpaceGuid.PcdAndroidKernelCommandLineOverflow

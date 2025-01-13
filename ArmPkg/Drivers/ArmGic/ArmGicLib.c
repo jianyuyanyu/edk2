@@ -1,6 +1,6 @@
 /** @file
 *
-*  Copyright (c) 2011-2021, Arm Limited. All rights reserved.
+*  Copyright (c) 2011-2023, Arm Limited. All rights reserved.
 *
 *  SPDX-License-Identifier: BSD-2-Clause-Patent
 *
@@ -104,10 +104,17 @@ GicGetCpuRedistributorBase (
   return 0;
 }
 
-UINTN
+/**
+  Return the GIC CPU Interrupt Interface ID.
+
+  @param GicInterruptInterfaceBase  Base address of the GIC Interrupt Interface.
+
+  @retval CPU Interface Identification information.
+**/
+UINT32
 EFIAPI
 ArmGicGetInterfaceIdentification (
-  IN  INTN  GicInterruptInterfaceBase
+  IN  UINTN  GicInterruptInterfaceBase
   )
 {
   // Read the GIC Identification Register
@@ -117,7 +124,7 @@ ArmGicGetInterfaceIdentification (
 UINTN
 EFIAPI
 ArmGicGetMaxNumInterrupts (
-  IN  INTN  GicDistributorBase
+  IN  UINTN  GicDistributorBase
   )
 {
   UINTN  ItLines;
@@ -133,61 +140,18 @@ ArmGicGetMaxNumInterrupts (
 VOID
 EFIAPI
 ArmGicSendSgiTo (
-  IN  INTN  GicDistributorBase,
-  IN  INTN  TargetListFilter,
-  IN  INTN  CPUTargetList,
-  IN  INTN  SgiId
+  IN  UINTN  GicDistributorBase,
+  IN  UINT8  TargetListFilter,
+  IN  UINT8  CPUTargetList,
+  IN  UINT8  SgiId
   )
 {
   MmioWrite32 (
     GicDistributorBase + ARM_GIC_ICDSGIR,
-    ((TargetListFilter & 0x3) << 24) | ((CPUTargetList & 0xFF) << 16) | SgiId
+    ((TargetListFilter & 0x3) << 24) |
+    ((CPUTargetList & 0xFF) << 16)   |
+    (SgiId & 0xF)
     );
-}
-
-/*
- * Acknowledge and return the value of the Interrupt Acknowledge Register
- *
- * InterruptId is returned separately from the register value because in
- * the GICv2 the register value contains the CpuId and InterruptId while
- * in the GICv3 the register value is only the InterruptId.
- *
- * @param GicInterruptInterfaceBase   Base Address of the GIC CPU Interface
- * @param InterruptId                 InterruptId read from the Interrupt
- *                                    Acknowledge Register
- *
- * @retval value returned by the Interrupt Acknowledge Register
- *
- */
-UINTN
-EFIAPI
-ArmGicAcknowledgeInterrupt (
-  IN  UINTN  GicInterruptInterfaceBase,
-  OUT UINTN  *InterruptId
-  )
-{
-  UINTN                  Value;
-  ARM_GIC_ARCH_REVISION  Revision;
-
-  Revision = ArmGicGetSupportedArchRevision ();
-  if (Revision == ARM_GIC_ARCH_REVISION_2) {
-    Value = ArmGicV2AcknowledgeInterrupt (GicInterruptInterfaceBase);
-    // InterruptId is required for the caller to know if a valid or spurious
-    // interrupt has been read
-    ASSERT (InterruptId != NULL);
-    if (InterruptId != NULL) {
-      *InterruptId = Value & ARM_GIC_ICCIAR_ACKINTID;
-    }
-  } else if (Revision == ARM_GIC_ARCH_REVISION_3) {
-    Value = ArmGicV3AcknowledgeInterrupt ();
-  } else {
-    ASSERT_EFI_ERROR (EFI_UNSUPPORTED);
-    // Report Spurious interrupt which is what the above controllers would
-    // return if no interrupt was available
-    Value = 1023;
-  }
-
-  return Value;
 }
 
 VOID
@@ -212,20 +176,20 @@ ArmGicEndOfInterrupt (
 VOID
 EFIAPI
 ArmGicSetInterruptPriority (
-  IN UINTN  GicDistributorBase,
-  IN UINTN  GicRedistributorBase,
-  IN UINTN  Source,
-  IN UINTN  Priority
+  IN UINTN   GicDistributorBase,
+  IN UINTN   GicRedistributorBase,
+  IN UINTN   Source,
+  IN UINT32  Priority
   )
 {
   UINT32                 RegOffset;
-  UINTN                  RegShift;
+  UINT8                  RegShift;
   ARM_GIC_ARCH_REVISION  Revision;
   UINTN                  GicCpuRedistributorBase;
 
   // Calculate register offset and bit position
-  RegOffset = Source / 4;
-  RegShift  = (Source % 4) * 8;
+  RegOffset = (UINT32)(Source / 4);
+  RegShift  = (UINT8)((Source % 4) * 8);
 
   Revision = ArmGicGetSupportedArchRevision ();
   if ((Revision == ARM_GIC_ARCH_REVISION_2) ||
@@ -263,13 +227,13 @@ ArmGicEnableInterrupt (
   )
 {
   UINT32                 RegOffset;
-  UINTN                  RegShift;
+  UINT8                  RegShift;
   ARM_GIC_ARCH_REVISION  Revision;
   UINTN                  GicCpuRedistributorBase;
 
   // Calculate enable register offset and bit position
-  RegOffset = Source / 32;
-  RegShift  = Source % 32;
+  RegOffset = (UINT32)(Source / 32);
+  RegShift  = (UINT8)(Source % 32);
 
   Revision = ArmGicGetSupportedArchRevision ();
   if ((Revision == ARM_GIC_ARCH_REVISION_2) ||
@@ -308,13 +272,13 @@ ArmGicDisableInterrupt (
   )
 {
   UINT32                 RegOffset;
-  UINTN                  RegShift;
+  UINT8                  RegShift;
   ARM_GIC_ARCH_REVISION  Revision;
   UINTN                  GicCpuRedistributorBase;
 
   // Calculate enable register offset and bit position
-  RegOffset = Source / 32;
-  RegShift  = Source % 32;
+  RegOffset = (UINT32)(Source / 32);
+  RegShift  = (UINT8)(Source % 32);
 
   Revision = ArmGicGetSupportedArchRevision ();
   if ((Revision == ARM_GIC_ARCH_REVISION_2) ||
@@ -352,14 +316,14 @@ ArmGicIsInterruptEnabled (
   )
 {
   UINT32                 RegOffset;
-  UINTN                  RegShift;
+  UINT8                  RegShift;
   ARM_GIC_ARCH_REVISION  Revision;
   UINTN                  GicCpuRedistributorBase;
   UINT32                 Interrupts;
 
   // Calculate enable register offset and bit position
-  RegOffset = Source / 32;
-  RegShift  = Source % 32;
+  RegOffset = (UINT32)(Source / 32);
+  RegShift  = (UINT8)(Source % 32);
 
   Revision = ArmGicGetSupportedArchRevision ();
   if ((Revision == ARM_GIC_ARCH_REVISION_2) ||
@@ -390,7 +354,7 @@ ArmGicIsInterruptEnabled (
 VOID
 EFIAPI
 ArmGicDisableDistributor (
-  IN  INTN  GicDistributorBase
+  IN  UINTN  GicDistributorBase
   )
 {
   // Disable Gic Distributor
@@ -400,7 +364,7 @@ ArmGicDisableDistributor (
 VOID
 EFIAPI
 ArmGicEnableInterruptInterface (
-  IN  INTN  GicInterruptInterfaceBase
+  IN  UINTN  GicInterruptInterfaceBase
   )
 {
   ARM_GIC_ARCH_REVISION  Revision;
@@ -418,7 +382,7 @@ ArmGicEnableInterruptInterface (
 VOID
 EFIAPI
 ArmGicDisableInterruptInterface (
-  IN  INTN  GicInterruptInterfaceBase
+  IN  UINTN  GicInterruptInterfaceBase
   )
 {
   ARM_GIC_ARCH_REVISION  Revision;

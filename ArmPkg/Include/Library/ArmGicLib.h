@@ -1,6 +1,6 @@
 /** @file
 *
-*  Copyright (c) 2011-2021, Arm Limited. All rights reserved.<BR>
+*  Copyright (c) 2011-2023, Arm Limited. All rights reserved.<BR>
 *
 *  SPDX-License-Identifier: BSD-2-Clause-Patent
 *
@@ -110,10 +110,10 @@
 // Bit Mask for
 #define ARM_GIC_ICCIAR_ACKINTID  0x3FF
 
-UINTN
+UINT32
 EFIAPI
 ArmGicGetInterfaceIdentification (
-  IN  INTN  GicInterruptInterfaceBase
+  IN  UINTN  GicInterruptInterfaceBase
   );
 
 // GIC Secure interfaces
@@ -121,8 +121,8 @@ VOID
 EFIAPI
 ArmGicSetupNonSecure (
   IN  UINTN  MpId,
-  IN  INTN   GicDistributorBase,
-  IN  INTN   GicInterruptInterfaceBase
+  IN  UINTN  GicDistributorBase,
+  IN  UINTN  GicInterruptInterfaceBase
   );
 
 VOID
@@ -136,61 +136,40 @@ ArmGicSetSecureInterrupts (
 VOID
 EFIAPI
 ArmGicEnableInterruptInterface (
-  IN  INTN  GicInterruptInterfaceBase
+  IN  UINTN  GicInterruptInterfaceBase
   );
 
 VOID
 EFIAPI
 ArmGicDisableInterruptInterface (
-  IN  INTN  GicInterruptInterfaceBase
+  IN  UINTN  GicInterruptInterfaceBase
   );
 
 VOID
 EFIAPI
 ArmGicEnableDistributor (
-  IN  INTN  GicDistributorBase
+  IN  UINTN  GicDistributorBase
   );
 
 VOID
 EFIAPI
 ArmGicDisableDistributor (
-  IN  INTN  GicDistributorBase
+  IN  UINTN  GicDistributorBase
   );
 
 UINTN
 EFIAPI
 ArmGicGetMaxNumInterrupts (
-  IN  INTN  GicDistributorBase
+  IN  UINTN  GicDistributorBase
   );
 
 VOID
 EFIAPI
 ArmGicSendSgiTo (
-  IN  INTN  GicDistributorBase,
-  IN  INTN  TargetListFilter,
-  IN  INTN  CPUTargetList,
-  IN  INTN  SgiId
-  );
-
-/*
- * Acknowledge and return the value of the Interrupt Acknowledge Register
- *
- * InterruptId is returned separately from the register value because in
- * the GICv2 the register value contains the CpuId and InterruptId while
- * in the GICv3 the register value is only the InterruptId.
- *
- * @param GicInterruptInterfaceBase   Base Address of the GIC CPU Interface
- * @param InterruptId                 InterruptId read from the Interrupt
- *                                    Acknowledge Register
- *
- * @retval value returned by the Interrupt Acknowledge Register
- *
- */
-UINTN
-EFIAPI
-ArmGicAcknowledgeInterrupt (
-  IN  UINTN  GicInterruptInterfaceBase,
-  OUT UINTN  *InterruptId
+  IN  UINTN  GicDistributorBase,
+  IN  UINT8  TargetListFilter,
+  IN  UINT8  CPUTargetList,
+  IN  UINT8  SgiId
   );
 
 VOID
@@ -203,17 +182,17 @@ ArmGicEndOfInterrupt (
 UINTN
 EFIAPI
 ArmGicSetPriorityMask (
-  IN  INTN  GicInterruptInterfaceBase,
-  IN  INTN  PriorityMask
+  IN  UINTN  GicInterruptInterfaceBase,
+  IN  INTN   PriorityMask
   );
 
 VOID
 EFIAPI
 ArmGicSetInterruptPriority (
-  IN UINTN  GicDistributorBase,
-  IN UINTN  GicRedistributorBase,
-  IN UINTN  Source,
-  IN UINTN  Priority
+  IN UINTN   GicDistributorBase,
+  IN UINTN   GicRedistributorBase,
+  IN UINTN   Source,
+  IN UINT32  Priority
   );
 
 VOID
@@ -251,20 +230,20 @@ VOID
 EFIAPI
 ArmGicV2SetupNonSecure (
   IN  UINTN  MpId,
-  IN  INTN   GicDistributorBase,
-  IN  INTN   GicInterruptInterfaceBase
+  IN  UINTN  GicDistributorBase,
+  IN  UINTN  GicInterruptInterfaceBase
   );
 
 VOID
 EFIAPI
 ArmGicV2EnableInterruptInterface (
-  IN  INTN  GicInterruptInterfaceBase
+  IN  UINTN  GicInterruptInterfaceBase
   );
 
 VOID
 EFIAPI
 ArmGicV2DisableInterruptInterface (
-  IN  INTN  GicInterruptInterfaceBase
+  IN  UINTN  GicInterruptInterfaceBase
   );
 
 UINTN
