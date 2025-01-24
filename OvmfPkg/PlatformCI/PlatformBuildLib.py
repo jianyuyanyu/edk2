@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 import os
+import shutil
 import logging
 import io
 
@@ -170,7 +171,7 @@ class PlatformBuilder( UefiBuilder, BuildSettingsManager):
         self.env.SetValue("PRODUCT_NAME", "OVMF", "Platform Hardcoded")
         self.env.SetValue("MAKE_STARTUP_NSH", "FALSE", "Default to false")
         self.env.SetValue("QEMU_HEADLESS", "FALSE", "Default to false")
-        self.env.SetValue("QEMU_CPUHP_QUIRK", "FALSE", "Default to false")
+        self.env.SetValue("DISABLE_DEBUG_MACRO_CHECK", "TRUE", "Disable by default")
         return 0
 
     def PlatformPreBuild(self):
@@ -181,13 +182,22 @@ class PlatformBuilder( UefiBuilder, BuildSettingsManager):
 
     def FlashRomImage(self):
         VirtualDrive = os.path.join(self.env.GetValue("BUILD_OUTPUT_BASE"), "VirtualDrive")
-        os.makedirs(VirtualDrive, exist_ok=True)
+        VirtualDriveBoot = os.path.join(VirtualDrive, "EFI", "BOOT")
+        os.makedirs(VirtualDriveBoot, exist_ok=True)
         OutputPath_FV = os.path.join(self.env.GetValue("BUILD_OUTPUT_BASE"), "FV")
 
         if (self.env.GetValue("QEMU_SKIP") and
             self.env.GetValue("QEMU_SKIP").upper() == "TRUE"):
             logging.info("skipping qemu boot test")
             return 0
+
+        # copy shell to VirtualDrive
+        for arch in self.env.GetValue("TARGET_ARCH").split():
+            src = os.path.join(self.env.GetValue("BUILD_OUTPUT_BASE"), arch, "Shell.efi")
+            dst = os.path.join(VirtualDriveBoot, f'BOOT{arch}.EFI')
+            if os.path.exists(src):
+                logging.info("copy %s -> %s", src, dst)
+                shutil.copyfile(src, dst)
 
         #
         # QEMU must be on the path
@@ -198,12 +208,15 @@ class PlatformBuilder( UefiBuilder, BuildSettingsManager):
         args += " -net none"                                                # turn off network
         args += " -smp 4"
         args += f" -drive file=fat:rw:{VirtualDrive},format=raw,media=disk" # Mount disk with startup.nsh
+        # Provides Rng services to the Guest VM
+        args += " -device virtio-rng-pci"
 
         if (self.env.GetValue("QEMU_HEADLESS").upper() == "TRUE"):
             args += " -display none"  # no graphics
 
         if (self.env.GetBuildValue("SMM_REQUIRE") == "1"):
             args += " -machine q35,smm=on" #,accel=(tcg|kvm)"
+            args += " --accel tcg,thread=single"
             #args += " -m ..."
             args += " -global driver=cfi.pflash01,property=secure,value=on"
             args += " -drive if=pflash,format=raw,unit=0,file=" + os.path.join(OutputPath_FV, "OVMF_CODE.fd") + ",readonly=on"
@@ -211,17 +224,6 @@ class PlatformBuilder( UefiBuilder, BuildSettingsManager):
         else:
             args += " -pflash " + os.path.join(OutputPath_FV, "OVMF.fd")    # path to firmware
 
-
-        ###
-        ### NOTE This is a temporary workaround to allow platform CI to cope with
-        ###      a QEMU bug in the CPU hotplug code. Once the CI environment has
-        ###      been updated to carry a fixed version of QEMU, this can be
-        ###      removed again
-        ###
-        ### Bugzilla: https://bugzilla.tianocore.org/show_bug.cgi?id=4250
-        ###
-        if (self.env.GetValue("QEMU_CPUHP_QUIRK").upper() == "TRUE"):
-            args += "  -fw_cfg name=opt/org.tianocore/X-Cpuhp-Bugcheck-Override,string=yes"
 
         if (self.env.GetValue("MAKE_STARTUP_NSH").upper() == "TRUE"):
             f = open(os.path.join(VirtualDrive, "startup.nsh"), "w")

@@ -336,6 +336,14 @@ PeiMemoryDiscoveredNotify (
 
   DEBUG ((DEBUG_INFO, "FspSiliconInit status: %r\n", Status));
 
+  //
+  // Get FspHobList
+  //
+  GuidHob = GetFirstGuidHob (&gFspHobGuid);
+  ASSERT (GuidHob != NULL);
+  FspHobListPtr = *(VOID **)GET_GUID_HOB_DATA (GuidHob);
+  DEBUG ((DEBUG_INFO, "FspHobListPtr - 0x%x\n", FspHobListPtr));
+
   if (Status == FSP_STATUS_VARIABLE_REQUEST) {
     //
     // call to Variable request handler
@@ -356,13 +364,6 @@ PeiMemoryDiscoveredNotify (
     DEBUG ((DEBUG_ERROR, "ERROR - TestFspSiliconInitApiOutput () fail, Status = %r\n", Status));
   }
 
-  //
-  // Now FspHobList complete, process it
-  //
-  GuidHob = GetFirstGuidHob (&gFspHobGuid);
-  ASSERT (GuidHob != NULL);
-  FspHobListPtr = *(VOID **)GET_GUID_HOB_DATA (GuidHob);
-  DEBUG ((DEBUG_INFO, "FspHobListPtr - 0x%x\n", FspHobListPtr));
   PostFspsHobProcess (FspHobListPtr);
 
   //
@@ -420,13 +421,22 @@ FspsWrapperInitDispatchMode (
   EFI_PEI_PPI_DESCRIPTOR                                 *MeasurementExcludedPpiList;
 
   MeasurementExcludedFvPpi = AllocatePool (sizeof (*MeasurementExcludedFvPpi));
-  ASSERT (MeasurementExcludedFvPpi != NULL);
+  if (MeasurementExcludedFvPpi == NULL) {
+    ASSERT (MeasurementExcludedFvPpi != NULL);
+    return EFI_OUT_OF_RESOURCES;
+  }
+
   MeasurementExcludedFvPpi->Count          = 1;
   MeasurementExcludedFvPpi->Fv[0].FvBase   = PcdGet32 (PcdFspsBaseAddress);
   MeasurementExcludedFvPpi->Fv[0].FvLength = ((EFI_FIRMWARE_VOLUME_HEADER *)(UINTN)PcdGet32 (PcdFspsBaseAddress))->FvLength;
 
   MeasurementExcludedPpiList = AllocatePool (sizeof (*MeasurementExcludedPpiList));
-  ASSERT (MeasurementExcludedPpiList != NULL);
+  if (MeasurementExcludedPpiList == NULL) {
+    ASSERT (MeasurementExcludedPpiList != NULL);
+    FreePool (MeasurementExcludedFvPpi);
+    return EFI_OUT_OF_RESOURCES;
+  }
+
   MeasurementExcludedPpiList->Flags = EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST;
   MeasurementExcludedPpiList->Guid  = &gEfiPeiFirmwareVolumeInfoMeasurementExcludedPpiGuid;
   MeasurementExcludedPpiList->Ppi   = MeasurementExcludedFvPpi;
@@ -438,7 +448,7 @@ FspsWrapperInitDispatchMode (
   // FSP-S Wrapper running in Dispatch mode and reports FSP-S FV to PEI dispatcher.
   //
   PeiServicesInstallFvInfoPpi (
-    NULL,
+    &((EFI_FIRMWARE_VOLUME_HEADER *)(UINTN)PcdGet32 (PcdFspsBaseAddress))->FileSystemGuid,
     (VOID *)(UINTN)PcdGet32 (PcdFspsBaseAddress),
     (UINT32)((EFI_FIRMWARE_VOLUME_HEADER *)(UINTN)PcdGet32 (PcdFspsBaseAddress))->FvLength,
     NULL,

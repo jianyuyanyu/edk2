@@ -8,6 +8,7 @@
 
 #include <Uefi.h>
 #include <Pi/PiMultiPhase.h>
+#include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HobLib.h>
 #include <libfdt.h>
@@ -64,7 +65,7 @@ QemuVirtMemInfoPeiLibConstructor (
         DEBUG ((
           DEBUG_INFO,
           "%a: System RAM @ 0x%lx - 0x%lx\n",
-          __FUNCTION__,
+          __func__,
           CurBase,
           CurBase + CurSize - 1
           ));
@@ -77,7 +78,7 @@ QemuVirtMemInfoPeiLibConstructor (
         DEBUG ((
           DEBUG_ERROR,
           "%a: Failed to parse FDT memory node\n",
-          __FUNCTION__
+          __func__
           ));
       }
     }

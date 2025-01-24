@@ -185,7 +185,7 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
   UINTN               VendorStrLen;
   UINTN               VerStrLen;
   UINTN               DateStrLen;
-  UINTN               BiosPhysicalSize;
+  UINT64              BiosPhysicalSize;
   CHAR16              *Vendor;
   CHAR16              *Version;
   CHAR16              *ReleaseDate;
@@ -253,7 +253,7 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
   (VOID)CopyMem (SmbiosRecord, InputData, sizeof (SMBIOS_TABLE_TYPE0));
 
   SmbiosRecord->Hdr.Length  = sizeof (SMBIOS_TABLE_TYPE0);
-  SmbiosRecord->BiosSegment = (UINT16)(FixedPcdGet32 (PcdFdBaseAddress) / SIZE_64KB);
+  SmbiosRecord->BiosSegment = 0;
   if (BiosPhysicalSize < SIZE_16MB) {
     SmbiosRecord->BiosSize = Base2ToByteWith64KUnit (BiosPhysicalSize) - 1;
   } else {
@@ -287,7 +287,7 @@ SMBIOS_MISC_TABLE_FUNCTION (MiscBiosVendor) {
     DEBUG ((
       DEBUG_ERROR,
       "[%a]:[%dL] Smbios Type00 Table Log Failed! %r \n",
-      __FUNCTION__,
+      __func__,
       DEBUG_LINE_NUMBER,
       Status
       ));
