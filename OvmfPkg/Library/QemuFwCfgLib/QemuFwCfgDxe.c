@@ -56,6 +56,7 @@ QemuFwCfgInitialize (
 {
   UINT32  Signature;
   UINT32  Revision;
+  UINT64  CcGuestAttr;
 
   //
   // Enable the access routines while probing to see if it is supported.
@@ -86,7 +87,10 @@ QemuFwCfgInitialize (
     DEBUG ((DEBUG_INFO, "QemuFwCfg interface (DMA) is supported.\n"));
   }
 
-  if (mQemuFwCfgDmaSupported && (MemEncryptSevIsEnabled () || (MemEncryptTdxIsEnabled ()))) {
+  CcGuestAttr = PcdGet64 (PcdConfidentialComputingGuestAttr);
+  if (mQemuFwCfgDmaSupported && (CC_GUEST_IS_SEV (CcGuestAttr) ||
+                                 CC_GUEST_IS_TDX (CcGuestAttr)))
+  {
     EFI_STATUS  Status;
 
     //
@@ -103,7 +107,7 @@ QemuFwCfgInitialize (
         DEBUG_ERROR,
         "QemuFwCfgDma %a:%a Failed to locate IOMMU protocol.\n",
         gEfiCallerBaseName,
-        __FUNCTION__
+        __func__
         ));
       ASSERT (FALSE);
       CpuDeadLoop ();
@@ -186,7 +190,7 @@ AllocFwCfgDmaAccessBuffer (
       DEBUG_ERROR,
       "%a:%a failed to allocate FW_CFG_DMA_ACCESS\n",
       gEfiCallerBaseName,
-      __FUNCTION__
+      __func__
       ));
     ASSERT (FALSE);
     CpuDeadLoop ();
@@ -215,7 +219,7 @@ AllocFwCfgDmaAccessBuffer (
       DEBUG_ERROR,
       "%a:%a failed to Map() FW_CFG_DMA_ACCESS\n",
       gEfiCallerBaseName,
-      __FUNCTION__
+      __func__
       ));
     ASSERT (FALSE);
     CpuDeadLoop ();
@@ -228,7 +232,7 @@ AllocFwCfgDmaAccessBuffer (
       DEBUG_ERROR,
       "%a:%a failed to Map() - requested 0x%Lx got 0x%Lx\n",
       gEfiCallerBaseName,
-      __FUNCTION__,
+      __func__,
       (UINT64)sizeof (FW_CFG_DMA_ACCESS),
       (UINT64)Size
       ));
@@ -263,7 +267,7 @@ FreeFwCfgDmaAccessBuffer (
       DEBUG_ERROR,
       "%a:%a failed to UnMap() Mapping 0x%Lx\n",
       gEfiCallerBaseName,
-      __FUNCTION__,
+      __func__,
       (UINT64)(UINTN)Mapping
       ));
     ASSERT (FALSE);
@@ -276,7 +280,7 @@ FreeFwCfgDmaAccessBuffer (
       DEBUG_ERROR,
       "%a:%a failed to Free() 0x%Lx\n",
       gEfiCallerBaseName,
-      __FUNCTION__,
+      __func__,
       (UINT64)(UINTN)Access
       ));
     ASSERT (FALSE);
@@ -320,7 +324,7 @@ MapFwCfgDmaDataBuffer (
       DEBUG_ERROR,
       "%a:%a failed to Map() Address 0x%Lx Size 0x%Lx\n",
       gEfiCallerBaseName,
-      __FUNCTION__,
+      __func__,
       (UINT64)(UINTN)HostAddress,
       (UINT64)Size
       ));
@@ -334,7 +338,7 @@ MapFwCfgDmaDataBuffer (
       DEBUG_ERROR,
       "%a:%a failed to Map() - requested 0x%x got 0x%Lx\n",
       gEfiCallerBaseName,
-      __FUNCTION__,
+      __func__,
       Size,
       (UINT64)NumberOfBytes
       ));
@@ -360,7 +364,7 @@ UnmapFwCfgDmaDataBuffer (
       DEBUG_ERROR,
       "%a:%a failed to UnMap() Mapping 0x%Lx\n",
       gEfiCallerBaseName,
-      __FUNCTION__,
+      __func__,
       (UINT64)(UINTN)Mapping
       ));
     ASSERT (FALSE);
@@ -415,7 +419,7 @@ InternalQemuFwCfgDmaBytes (
   // When SEV or TDX is enabled, map Buffer to DMA address before issuing the DMA
   // request
   //
-  if (MemEncryptSevIsEnabled () || MemEncryptTdxIsEnabled ()) {
+  if (mIoMmuProtocol != NULL) {
     VOID                  *AccessBuffer;
     EFI_PHYSICAL_ADDRESS  DataBufferAddress;
 

@@ -37,6 +37,9 @@
   TimerLib
   PeCoffGetEntryPointLib
   RiscVSbiLib
+  RiscVMmuLib
+  RiscVFpuLib
+  CacheMaintenanceLib
 
 [Sources]
   CpuDxe.c

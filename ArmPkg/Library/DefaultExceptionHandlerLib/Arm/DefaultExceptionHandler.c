@@ -13,7 +13,6 @@
 #include <Library/DebugLib.h>
 #include <Library/PeCoffGetEntryPointLib.h>
 #include <Library/PrintLib.h>
-#include <Library/ArmDisassemblerLib.h>
 #include <Library/SerialPortLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
@@ -22,6 +21,12 @@
 
 #include <Protocol/DebugSupport.h>
 #include <Library/DefaultExceptionHandlerLib.h>
+
+//
+// Maximum number of characters to print to serial (UINT8s) and to console if
+// available (as UINT16s)
+//
+#define MAX_PRINT_CHARS  100
 
 //
 // The number of elements in a CHAR8 array, including the terminating NUL, that
@@ -198,14 +203,12 @@ DefaultExceptionHandler (
   IN OUT EFI_SYSTEM_CONTEXT  SystemContext
   )
 {
-  CHAR8    Buffer[100];
+  CHAR8    Buffer[MAX_PRINT_CHARS];
+  CHAR16   UnicodeBuffer[MAX_PRINT_CHARS];
   UINTN    CharCount;
   UINT32   DfsrStatus;
   UINT32   IfsrStatus;
   BOOLEAN  DfsrWrite;
-  UINT32   PcAdjust;
-
-  PcAdjust = 0;
 
   CharCount = AsciiSPrint (
                 Buffer,
@@ -216,20 +219,17 @@ DefaultExceptionHandler (
                 SystemContext.SystemContextArm->CPSR
                 );
   SerialPortWrite ((UINT8 *)Buffer, CharCount);
-  if (gST->ConOut != NULL) {
-    AsciiPrint (Buffer);
-  }
+
+  // Prepare a unicode buffer for ConOut, if applicable, as Buffer is used
+  // below.
+  UnicodeSPrintAsciiFormat (UnicodeBuffer, MAX_PRINT_CHARS, Buffer);
 
   DEBUG_CODE_BEGIN ();
   CHAR8   *Pdb;
   UINT32  ImageBase;
   UINT32  PeCoffSizeOfHeader;
   UINT32  Offset;
-  CHAR8   CpsrStr[CPSR_STRING_SIZE];    // char per bit. Lower 5-bits are mode
-                                        // that is a 3 char string
-  CHAR8   Buffer[80];
-  UINT8   *DisAsm;
-  UINT32  ItBlock;
+  CHAR8   CpsrStr[CPSR_STRING_SIZE];
 
   CpsrString (SystemContext.SystemContextArm->CPSR, CpsrStr);
   DEBUG ((DEBUG_ERROR, "%a\n", CpsrStr));
@@ -248,25 +248,6 @@ DefaultExceptionHandler (
     // get the offset that matches the link map.
     //
     DEBUG ((DEBUG_ERROR, "loaded at 0x%08x (PE/COFF offset) 0x%x (ELF or Mach-O offset) 0x%x", ImageBase, Offset, Offset - PeCoffSizeOfHeader));
-
-    // If we come from an image it is safe to show the instruction. We know it should not fault
-    DisAsm  = (UINT8 *)(UINTN)SystemContext.SystemContextArm->PC;
-    ItBlock = 0;
-    DisassembleInstruction (&DisAsm, (SystemContext.SystemContextArm->CPSR & BIT5) == BIT5, TRUE, &ItBlock, Buffer, sizeof (Buffer));
-    DEBUG ((DEBUG_ERROR, "\n%a", Buffer));
-
-    switch (ExceptionType) {
-      case EXCEPT_ARM_UNDEFINED_INSTRUCTION:
-      case EXCEPT_ARM_SOFTWARE_INTERRUPT:
-      case EXCEPT_ARM_PREFETCH_ABORT:
-      case EXCEPT_ARM_DATA_ABORT:
-        // advance PC past the faulting instruction
-        PcAdjust = (UINTN)DisAsm - SystemContext.SystemContextArm->PC;
-        break;
-
-      default:
-        break;
-    }
   }
 
   DEBUG_CODE_END ();
@@ -289,6 +270,14 @@ DefaultExceptionHandler (
   }
 
   DEBUG ((DEBUG_ERROR, "\n"));
+
+  // Attempt to print that we had a synchronous exception to ConOut.  We do
+  // this after the serial logging as ConOut's logging is more complex and we
+  // aren't guaranteed to succeed.
+  if (gST->ConOut != NULL) {
+    gST->ConOut->OutputString (gST->ConOut, UnicodeBuffer);
+  }
+
   ASSERT (FALSE);
 
   CpuDeadLoop ();   // may return if executing under a debugger
@@ -296,7 +285,4 @@ DefaultExceptionHandler (
   // Clear the error registers that we have already displayed incase some one wants to keep going
   SystemContext.SystemContextArm->DFSR = 0;
   SystemContext.SystemContextArm->IFSR = 0;
-
-  // If some one is stepping past the exception handler adjust the PC to point to the next instruction
-  SystemContext.SystemContextArm->PC += PcAdjust;
 }

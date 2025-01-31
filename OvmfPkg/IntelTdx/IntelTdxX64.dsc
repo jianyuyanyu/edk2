@@ -90,15 +90,6 @@
   INTEL:*_*_*_CC_FLAGS = /D TDX_PEI_LESS_BOOT
   GCC:*_*_*_CC_FLAGS = -D TDX_PEI_LESS_BOOT
 
-  #
-  # SECURE_BOOT_FEATURE_ENABLED
-  #
-!if $(SECURE_BOOT_ENABLE) == TRUE
-  MSFT:*_*_*_CC_FLAGS = /D SECURE_BOOT_FEATURE_ENABLED
-  INTEL:*_*_*_CC_FLAGS = /D SECURE_BOOT_FEATURE_ENABLED
-  GCC:*_*_*_CC_FLAGS = -D SECURE_BOOT_FEATURE_ENABLED
-!endif
-
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
   GCC:*_*_*_DLINK_FLAGS = -z common-page-size=0x1000
   XCODE:*_*_*_DLINK_FLAGS = -seg1addr 0x1000 -segalign 0x1000
@@ -160,6 +151,7 @@
   SerialPortLib|PcAtChipsetPkg/Library/SerialIoLib/SerialIoLib.inf
   MtrrLib|UefiCpuPkg/Library/MtrrLib/MtrrLib.inf
   MicrocodeLib|UefiCpuPkg/Library/MicrocodeLib/MicrocodeLib.inf
+  CpuPageTableLib|UefiCpuPkg/Library/CpuPageTableLib/CpuPageTableLib.inf
   UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
   UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
   UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
@@ -179,6 +171,7 @@
   MemEncryptTdxLib|OvmfPkg/Library/BaseMemEncryptTdxLib/BaseMemEncryptTdxLib.inf
   PeiHardwareInfoLib|OvmfPkg/Library/HardwareInfoLib/PeiHardwareInfoLib.inf
   DxeHardwareInfoLib|OvmfPkg/Library/HardwareInfoLib/DxeHardwareInfoLib.inf
+  ImagePropertiesRecordLib|MdeModulePkg/Library/ImagePropertiesRecordLib/ImagePropertiesRecordLib.inf
 
   LockBoxLib|OvmfPkg/Library/LockBoxLib/LockBoxBaseLib.inf
   CustomizedDisplayLib|MdeModulePkg/Library/CustomizedDisplayLib/CustomizedDisplayLib.inf
@@ -192,7 +185,7 @@
 
   IntrinsicLib|CryptoPkg/Library/IntrinsicLib/IntrinsicLib.inf
   OpensslLib|CryptoPkg/Library/OpensslLib/OpensslLibCrypto.inf
-  RngLib|MdePkg/Library/BaseRngLibTimerLib/BaseRngLibTimerLib.inf
+  RngLib|MdeModulePkg/Library/BaseRngLibTimerLib/BaseRngLibTimerLib.inf
 
 !if $(SECURE_BOOT_ENABLE) == TRUE
   PlatformSecureLib|OvmfPkg/Library/PlatformSecureLib/PlatformSecureLib.inf
@@ -208,9 +201,6 @@
   VariablePolicyHelperLib|MdeModulePkg/Library/VariablePolicyHelperLib/VariablePolicyHelperLib.inf
   VariableFlashInfoLib|MdeModulePkg/Library/BaseVariableFlashInfoLib/BaseVariableFlashInfoLib.inf
 
-!if $(BUILD_SHELL) == TRUE
-  ShellLib|ShellPkg/Library/UefiShellLib/UefiShellLib.inf
-!endif
   ShellCEntryLib|ShellPkg/Library/UefiShellCEntryLib/UefiShellCEntryLib.inf
   S3BootScriptLib|MdeModulePkg/Library/PiDxeS3BootScriptLib/DxeS3BootScriptLib.inf
   SmbusLib|MdePkg/Library/BaseSmbusLibNull/BaseSmbusLibNull.inf
@@ -219,7 +209,10 @@
   Tcg2PhysicalPresenceLib|OvmfPkg/Library/Tcg2PhysicalPresenceLibNull/DxeTcg2PhysicalPresenceLib.inf
   TpmMeasurementLib|SecurityPkg/Library/DxeTpmMeasurementLib/DxeTpmMeasurementLib.inf
 
+!include OvmfPkg/Include/Dsc/ShellLibs.dsc.inc
+
 [LibraryClasses.common]
+  AmdSvsmLib|UefiCpuPkg/Library/AmdSvsmLibNull/AmdSvsmLibNull.inf
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/BaseCryptLib.inf
   CcExitLib|OvmfPkg/Library/CcExitLib/CcExitLib.inf
   TdxLib|MdePkg/Library/TdxLib/TdxLib.inf
@@ -238,11 +231,7 @@
   ExtractGuidedSectionLib|MdePkg/Library/BaseExtractGuidedSectionLib/BaseExtractGuidedSectionLib.inf
   PeiServicesTablePointerLib|MdePkg/Library/PeiServicesTablePointerLibIdt/PeiServicesTablePointerLibIdt.inf
   MemoryAllocationLib|EmbeddedPkg/Library/PrePiMemoryAllocationLib/PrePiMemoryAllocationLib.inf
-!if $(TOOL_CHAIN_TAG) == "XCODE5"
-  CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/Xcode5SecPeiCpuExceptionHandlerLib.inf
-!else
   CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/SecPeiCpuExceptionHandlerLib.inf
-!endif
   CcExitLib|OvmfPkg/Library/CcExitLib/SecCcExitLib.inf
   MemEncryptSevLib|OvmfPkg/Library/BaseMemEncryptSevLib/SecMemEncryptSevLib.inf
   PrePiHobListPointerLib|OvmfPkg/IntelTdx/PrePiHobListPointerLibTdx/PrePiHobListPointerLibTdx.inf
@@ -250,6 +239,7 @@
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
   PeilessStartupLib|OvmfPkg/Library/PeilessStartupLib/PeilessStartupLib.inf
   CcProbeLib|OvmfPkg/Library/CcProbeLib/SecPeiCcProbeLib.inf
+  TdxMeasurementLib|OvmfPkg/IntelTdx/TdxMeasurementLib/SecPeiTdxMeasurementLib.inf
 
 [LibraryClasses.common.DXE_CORE]
   HobLib|MdePkg/Library/DxeCoreHobLib/DxeCoreHobLib.inf
@@ -301,6 +291,7 @@
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
 
 [LibraryClasses.common.DXE_DRIVER]
+  AcpiPlatformLib|OvmfPkg/Library/AcpiPlatformLib/DxeAcpiPlatformLib.inf
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
   TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
   ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLib.inf
@@ -319,11 +310,11 @@
   CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/DxeCpuExceptionHandlerLib.inf
   LockBoxLib|OvmfPkg/Library/LockBoxLib/LockBoxDxeLib.inf
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
-  CpuPageTableLib|UefiCpuPkg/Library/CpuPageTableLib/CpuPageTableLib.inf
   MpInitLib|UefiCpuPkg/Library/MpInitLib/DxeMpInitLib.inf
   NestedInterruptTplLib|OvmfPkg/Library/NestedInterruptTplLib/NestedInterruptTplLib.inf
   QemuFwCfgS3Lib|OvmfPkg/Library/QemuFwCfgS3Lib/DxeQemuFwCfgS3LibFwCfg.inf
   QemuLoadImageLib|OvmfPkg/Library/X86QemuLoadImageLib/X86QemuLoadImageLib.inf
+  TdxMeasurementLib|OvmfPkg/IntelTdx/TdxMeasurementLib/DxeTdxMeasurementLib.inf
 
 [LibraryClasses.common.UEFI_APPLICATION]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -387,10 +378,8 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdConOutGopSupport|TRUE
   gEfiMdeModulePkgTokenSpaceGuid.PcdConOutUgaSupport|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdInstallAcpiSdtProtocol|TRUE
-!ifdef $(CSM_ENABLE)
-  gUefiOvmfPkgTokenSpaceGuid.PcdCsmEnable|TRUE
-!endif
 !if $(SECURE_BOOT_ENABLE) == TRUE
+  gUefiOvmfPkgTokenSpaceGuid.PcdSecureBootSupported|TRUE
   gEfiMdeModulePkgTokenSpaceGuid.PcdRequireSelfSignedPk|TRUE
 !endif
 
@@ -468,11 +457,16 @@
 
   gEfiShellPkgTokenSpaceGuid.PcdShellFileOperationSize|0x20000
 
-  # IRQs 5, 9, 10, 11 are level-triggered
-  gUefiOvmfPkgTokenSpaceGuid.Pcd8259LegacyModeEdgeLevel|0x0E20
-
   # Point to the MdeModulePkg/Application/UiApp/UiApp.inf
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x21, 0xaa, 0x2c, 0x46, 0x14, 0x76, 0x03, 0x45, 0x83, 0x6e, 0x8a, 0xb6, 0xf4, 0x66, 0x23, 0x31 }
+
+  #
+  # PcdFirstTimeWakeUpAPsBySipi determines whether to employ
+  # SIPI instead of the INIT-SIPI-SIPI sequence during APs
+  # initialization. Deactivate this parameter to preserve
+  # the original execution of INIT-SIPI-SIPI.
+  #
+  gUefiCpuPkgTokenSpaceGuid.PcdFirstTimeWakeUpAPsBySipi|FALSE
 
 ################################################################################
 #
@@ -590,7 +584,6 @@
       # Directly use DxeMpInitLib. It depends on DxeMpInitLibMpDepLib which
       # checks the Protocol of gEfiMpInitLibMpDepProtocolGuid.
       #
-      CpuPageTableLib|UefiCpuPkg/Library/CpuPageTableLib/CpuPageTableLib.inf
       MpInitLib|UefiCpuPkg/Library/MpInitLib/DxeMpInitLib.inf
       NULL|OvmfPkg/Library/MpInitLibDepLib/DxeMpInitLibMpDepLib.inf
   }
@@ -644,7 +637,6 @@
   OvmfPkg/Virtio10Dxe/Virtio10.inf
   OvmfPkg/VirtioBlkDxe/VirtioBlk.inf
   OvmfPkg/VirtioScsiDxe/VirtioScsi.inf
-  OvmfPkg/VirtioRngDxe/VirtioRng.inf
 !if $(PVSCSI_ENABLE) == TRUE
   OvmfPkg/PvScsiDxe/PvScsiDxe.inf
 !endif
@@ -679,18 +671,15 @@
   OvmfPkg/VirtioFsDxe/VirtioFsDxe.inf
   MdeModulePkg/Bus/Scsi/ScsiBusDxe/ScsiBusDxe.inf
   MdeModulePkg/Bus/Scsi/ScsiDiskDxe/ScsiDiskDxe.inf
-  OvmfPkg/SataControllerDxe/SataControllerDxe.inf
+  MdeModulePkg/Bus/Pci/SataControllerDxe/SataControllerDxe.inf
   MdeModulePkg/Bus/Ata/AtaAtapiPassThru/AtaAtapiPassThru.inf
   MdeModulePkg/Bus/Ata/AtaBusDxe/AtaBusDxe.inf
   MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf
   MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
   MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
-  MdeModulePkg/Universal/MemoryTest/NullMemoryTestDxe/NullMemoryTestDxe.inf
 
-!ifndef $(CSM_ENABLE)
   OvmfPkg/QemuVideoDxe/QemuVideoDxe.inf
-!endif
   OvmfPkg/QemuRamfbDxe/QemuRamfbDxe.inf
   OvmfPkg/VirtioGpuDxe/VirtioGpu.inf
 
@@ -729,32 +718,8 @@
   MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
   MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
 
-!if $(TOOL_CHAIN_TAG) != "XCODE5" && $(BUILD_SHELL) == TRUE
-  OvmfPkg/LinuxInitrdDynamicShellCommand/LinuxInitrdDynamicShellCommand.inf {
-    <PcdsFixedAtBuild>
-      gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
-  }
-!endif
-!if $(BUILD_SHELL) == TRUE
-  ShellPkg/Application/Shell/Shell.inf {
-    <LibraryClasses>
-      ShellCommandLib|ShellPkg/Library/UefiShellCommandLib/UefiShellCommandLib.inf
-      NULL|ShellPkg/Library/UefiShellLevel2CommandsLib/UefiShellLevel2CommandsLib.inf
-      NULL|ShellPkg/Library/UefiShellLevel1CommandsLib/UefiShellLevel1CommandsLib.inf
-      NULL|ShellPkg/Library/UefiShellLevel3CommandsLib/UefiShellLevel3CommandsLib.inf
-      NULL|ShellPkg/Library/UefiShellDriver1CommandsLib/UefiShellDriver1CommandsLib.inf
-      NULL|ShellPkg/Library/UefiShellDebug1CommandsLib/UefiShellDebug1CommandsLib.inf
-      NULL|ShellPkg/Library/UefiShellInstall1CommandsLib/UefiShellInstall1CommandsLib.inf
-      HandleParsingLib|ShellPkg/Library/UefiHandleParsingLib/UefiHandleParsingLib.inf
-      PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
-      BcfgCommandLib|ShellPkg/Library/UefiShellBcfgCommandLib/UefiShellBcfgCommandLib.inf
-
-    <PcdsFixedAtBuild>
-      gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0xFF
-      gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
-      gEfiMdePkgTokenSpaceGuid.PcdUefiLibMaxPrintBufferSize|8000
-  }
-!endif
+!include OvmfPkg/Include/Dsc/ShellComponents.dsc.inc
+!include OvmfPkg/Include/Dsc/OvmfRngComponents.dsc.inc
 
 !if $(SECURE_BOOT_ENABLE) == TRUE
   SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigDxe.inf
@@ -783,8 +748,8 @@
   #
   # Cc Measurement Protocol for Td guest
   #
-  SecurityPkg/Tcg/TdTcg2Dxe/TdTcg2Dxe.inf {
+  OvmfPkg/Tcg/TdTcg2Dxe/TdTcg2Dxe.inf {
     <LibraryClasses>
-      HashLib|SecurityPkg/Library/HashLibTdx/HashLibTdx.inf
+      HashLib|OvmfPkg/Library/HashLibTdx/HashLibTdx.inf
       NULL|SecurityPkg/Library/HashInstanceLibSha384/HashInstanceLibSha384.inf
   }

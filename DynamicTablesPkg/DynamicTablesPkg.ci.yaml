@@ -2,9 +2,13 @@
 # CI configuration for DynamicTablesPkg
 #
 # Copyright (c) 2020, Arm Limited. All rights reserved.<BR>
+# Copyright (C) 2024 Advanced Micro Devices, Inc. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 {
+    "PrEval": {
+        "DscPath": "DynamicTablesPkg.dsc",
+    },
     "EccCheck": {
         ## Exception sample looks like below:
         ## "ExceptionList": [
@@ -97,9 +101,12 @@
            "ARMLTD",
            "AMLDBG",
            "EISAID",
+           "cacheablity",
            "CCIDX",
            "CCSIDR",
            "countof",
+           "deviceid",
+           "EArch",
            "edynamic",
            "EOBJECT",
            "invoc",
@@ -108,6 +115,7 @@
            "lgreater",
            "lless",
            "MPIDR",
+           "NAMESPACEID",
            "PASID",
            "PERIPHBASE",
            "phandle",
@@ -124,11 +132,20 @@
            "TABLEEX",
            "TNSID",
            "Vatos",
-           "WBINVD"
+           "WBINVD",
+           "xapic"
            ],           # words to extend to the dictionary for this package
         "IgnoreStandardPaths": [],   # Standard Plugin defined paths that
                                      # should be ignore
         "AdditionalIncludePaths": [] # Additional paths to spell check
                                      # (wildcards supported)
+    },
+
+    "DebugMacroCheck": {
+      "StringSubstitutions": {
+          # DynamicTablesPkg/Library/Common/TableHelperLib/ConfigurationManagerObjectParser.c
+          # Reason: Debug format strings are dynamically set.
+          "Parser[Index].Format": "%d"
+      }
     }
 }

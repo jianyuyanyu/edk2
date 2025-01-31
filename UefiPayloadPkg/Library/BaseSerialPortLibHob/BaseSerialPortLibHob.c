@@ -52,7 +52,8 @@ typedef struct {
 } UART_INFO;
 
 UART_INFO  mUartInfo[MAX_SIZE];
-UINT8      mUartCount = 0;
+UINT8      mUartCount                     = 0;
+BOOLEAN    mBaseSerialPortLibHobAtRuntime = FALSE;
 
 /**
   Reads an 8-bit register. If UseMmio is TRUE, then the value is read from
@@ -139,6 +140,75 @@ SerialPortInitialize (
   UINT8                               Value;
 
   if (mUartCount > 0) {
+    return RETURN_SUCCESS;
+  }
+
+  if (GetHobList () == NULL) {
+    mUartCount         = 0;
+    SerialRegisterBase = PcdGet64 (PcdSerialRegisterBase);
+    MmioEnable         = PcdGetBool (PcdSerialUseMmio);
+    BaudRate           = PcdGet32 (PcdSerialBaudRate);
+    RegisterStride     = (UINT8)PcdGet32 (PcdSerialRegisterStride);
+
+    mUartInfo[mUartCount].BaseAddress    = SerialRegisterBase;
+    mUartInfo[mUartCount].UseMmio        = MmioEnable;
+    mUartInfo[mUartCount].BaudRate       = BaudRate;
+    mUartInfo[mUartCount].RegisterStride = RegisterStride;
+    mUartCount++;
+
+    Divisor = PcdGet32 (PcdSerialClockRate) / (BaudRate * 16);
+    if ((PcdGet32 (PcdSerialClockRate) % (BaudRate * 16)) >= BaudRate * 8) {
+      Divisor++;
+    }
+
+    //
+    // See if the serial port is already initialized
+    //
+    Initialized = TRUE;
+    if ((SerialPortReadRegister (SerialRegisterBase, R_UART_LCR, MmioEnable, RegisterStride) & 0x3F) != (PcdGet8 (PcdSerialLineControl) & 0x3F)) {
+      Initialized = FALSE;
+    }
+
+    Value = (UINT8)(SerialPortReadRegister (SerialRegisterBase, R_UART_LCR, MmioEnable, RegisterStride) | B_UART_LCR_DLAB);
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_LCR, Value, MmioEnable, RegisterStride);
+    CurrentDivisor  =  SerialPortReadRegister (SerialRegisterBase, R_UART_BAUD_HIGH, MmioEnable, RegisterStride) << 8;
+    CurrentDivisor |= (UINT32)SerialPortReadRegister (SerialRegisterBase, R_UART_BAUD_LOW, MmioEnable, RegisterStride);
+    Value           = (UINT8)(SerialPortReadRegister (SerialRegisterBase, R_UART_LCR, MmioEnable, RegisterStride) & ~B_UART_LCR_DLAB);
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_LCR, Value, MmioEnable, RegisterStride);
+    if (CurrentDivisor != Divisor) {
+      Initialized = FALSE;
+    }
+
+    //
+    // Configure baud rate
+    //
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_LCR, B_UART_LCR_DLAB, MmioEnable, RegisterStride);
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_BAUD_HIGH, (UINT8)(Divisor >> 8), MmioEnable, RegisterStride);
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_BAUD_LOW, (UINT8)(Divisor & 0xff), MmioEnable, RegisterStride);
+
+    //
+    // Clear DLAB and configure Data Bits, Parity, and Stop Bits.
+    // Strip reserved bits from PcdSerialLineControl
+    //
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_LCR, (UINT8)(PcdGet8 (PcdSerialLineControl) & 0x3F), MmioEnable, RegisterStride);
+
+    //
+    // Enable and reset FIFOs
+    // Strip reserved bits from PcdSerialFifoControl
+    //
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_FCR, 0x00, MmioEnable, RegisterStride);
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_FCR, (UINT8)(PcdGet8 (PcdSerialFifoControl) & (B_UART_FCR_FIFOE | B_UART_FCR_FIFO64)), MmioEnable, RegisterStride);
+
+    //
+    // Set FIFO Polled Mode by clearing IER after setting FCR
+    //
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_IER, 0x00, MmioEnable, RegisterStride);
+
+    //
+    // Put Modem Control Register(MCR) into its reset state of 0x00.
+    //
+    SerialPortWriteRegister (SerialRegisterBase, R_UART_MCR, 0x00, MmioEnable, RegisterStride);
+
     return RETURN_SUCCESS;
   }
 
@@ -285,6 +355,11 @@ SerialPortWrite (
     UseMmio     = mUartInfo[Count].UseMmio;
     Stride      = mUartInfo[Count].RegisterStride;
 
+    if (UseMmio && mBaseSerialPortLibHobAtRuntime) {
+      Count++;
+      continue;
+    }
+
     if (BaseAddress == 0) {
       Count++;
       continue;
@@ -294,6 +369,13 @@ SerialPortWrite (
     BytesLeft  = NumberOfBytes;
 
     while (BytesLeft != 0) {
+      //
+      // Wait for the serial port to be ready, to make sure both the transmit FIFO
+      // and shift register empty.
+      //
+      while ((SerialPortReadRegister (BaseAddress, R_UART_LSR, UseMmio, Stride) & B_UART_LSR_TXRDY) == 0) {
+      }
+
       //
       // Fill the entire Tx FIFO
       //

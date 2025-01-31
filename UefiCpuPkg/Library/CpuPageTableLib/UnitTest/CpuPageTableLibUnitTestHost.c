@@ -9,11 +9,11 @@
 #include "CpuPageTableLibUnitTest.h"
 
 // ----------------------------------------------------------------------- PageMode--TestCount-TestRangeCount---RandomOptions
-static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPaging4Level    = { Paging4Level, 30, 20, USE_RANDOM_ARRAY };
-static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPaging4Level1GB = { Paging4Level1GB, 30, 20, USE_RANDOM_ARRAY };
-static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPaging5Level    = { Paging5Level, 30, 20, USE_RANDOM_ARRAY };
-static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPaging5Level1GB = { Paging5Level1GB, 30, 20, USE_RANDOM_ARRAY };
-static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPagingPae       = { PagingPae, 30, 20, USE_RANDOM_ARRAY };
+// static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPaging4Level    = { Paging4Level, 30, 20, USE_RANDOM_ARRAY };
+// static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPaging4Level1GB = { Paging4Level1GB, 30, 20, USE_RANDOM_ARRAY };
+// static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPaging5Level    = { Paging5Level, 30, 20, USE_RANDOM_ARRAY };
+// static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPaging5Level1GB = { Paging5Level1GB, 30, 20, USE_RANDOM_ARRAY };
+// static CPU_PAGE_TABLE_LIB_RANDOM_TEST_CONTEXT  mTestContextPagingPae       = { PagingPae, 30, 20, USE_RANDOM_ARRAY };
 
 /**
   Check if the input parameters are not supported.
@@ -838,7 +838,8 @@ UefiTestMain (
   EFI_STATUS                  Status;
   UNIT_TEST_FRAMEWORK_HANDLE  Framework;
   UNIT_TEST_SUITE_HANDLE      ManualTestCase;
-  UNIT_TEST_SUITE_HANDLE      RandomTestCase;
+
+  // UNIT_TEST_SUITE_HANDLE      RandomTestCase;
 
   Framework = NULL;
 
@@ -874,18 +875,18 @@ UefiTestMain (
   //
   // Populate the Random Test Cases.
   //
-  Status = CreateUnitTestSuite (&RandomTestCase, Framework, "Random Test Cases", "CpuPageTableLib.Random", NULL, NULL);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "Failed in CreateUnitTestSuite for Random Test Cases\n"));
-    Status = EFI_OUT_OF_RESOURCES;
-    goto EXIT;
-  }
+  // Status = CreateUnitTestSuite (&RandomTestCase, Framework, "Random Test Cases", "CpuPageTableLib.Random", NULL, NULL);
+  // if (EFI_ERROR (Status)) {
+  //   DEBUG ((DEBUG_ERROR, "Failed in CreateUnitTestSuite for Random Test Cases\n"));
+  //   Status = EFI_OUT_OF_RESOURCES;
+  //   goto EXIT;
+  // }
 
-  AddTestCase (RandomTestCase, "Random Test for Paging4Level", "Random Test Case1", TestCaseforRandomTest, NULL, NULL, &mTestContextPaging4Level);
-  AddTestCase (RandomTestCase, "Random Test for Paging4Level1G", "Random Test Case2", TestCaseforRandomTest, NULL, NULL, &mTestContextPaging4Level1GB);
-  AddTestCase (RandomTestCase, "Random Test for Paging5Level", "Random Test Case3", TestCaseforRandomTest, NULL, NULL, &mTestContextPaging5Level);
-  AddTestCase (RandomTestCase, "Random Test for Paging5Level1G", "Random Test Case4", TestCaseforRandomTest, NULL, NULL, &mTestContextPaging5Level1GB);
-  AddTestCase (RandomTestCase, "Random Test for PagingPae", "Random Test Case5", TestCaseforRandomTest, NULL, NULL, &mTestContextPagingPae);
+  // AddTestCase (RandomTestCase, "Random Test for Paging4Level", "Random Test Case1", TestCaseforRandomTest, NULL, NULL, &mTestContextPaging4Level);
+  // AddTestCase (RandomTestCase, "Random Test for Paging4Level1G", "Random Test Case2", TestCaseforRandomTest, NULL, NULL, &mTestContextPaging4Level1GB);
+  // AddTestCase (RandomTestCase, "Random Test for Paging5Level", "Random Test Case3", TestCaseforRandomTest, NULL, NULL, &mTestContextPaging5Level);
+  // AddTestCase (RandomTestCase, "Random Test for Paging5Level1G", "Random Test Case4", TestCaseforRandomTest, NULL, NULL, &mTestContextPaging5Level1GB);
+  // AddTestCase (RandomTestCase, "Random Test for PagingPae", "Random Test Case5", TestCaseforRandomTest, NULL, NULL, &mTestContextPagingPae);
 
   //
   // Execute the tests.

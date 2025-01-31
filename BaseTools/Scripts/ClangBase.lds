@@ -20,7 +20,11 @@ SECTIONS {
    */
   . = PECOFF_HEADER_SIZE;
 
-  .text : ALIGN(CONSTANT(MAXPAGESIZE)) {
+  .entry ALIGN(CONSTANT(COMMONPAGESIZE)) : {
+    KEEP(*(.entry))
+  }
+
+  .text : ALIGN(CONSTANT(COMMONPAGESIZE)) {
     *(.text .text.* .stub .gnu.linkonce.t.*)
     *(.rodata .rodata.* .gnu.linkonce.r.*)
     *(.got .got.*)
@@ -42,12 +46,12 @@ SECTIONS {
    * between these sections is the same in the ELF and the PE/COFF versions of
    * this binary.
    */
-  .data ALIGN(ALIGNOF(.text)) : ALIGN(CONSTANT(MAXPAGESIZE)) {
+  .data ALIGN(ALIGNOF(.text)) : ALIGN(CONSTANT(COMMONPAGESIZE)) {
     *(.data .data.* .gnu.linkonce.d.*)
     *(.bss .bss.*)
   }
 
-  .eh_frame ALIGN(CONSTANT(MAXPAGESIZE)) : {
+  .eh_frame ALIGN(CONSTANT(COMMONPAGESIZE)) : {
     KEEP (*(.eh_frame))
   }
 
@@ -55,9 +59,19 @@ SECTIONS {
     *(.rela .rela.*)
   }
 
-  .hii : ALIGN(CONSTANT(MAXPAGESIZE)) {
+  .hii : ALIGN(CONSTANT(COMMONPAGESIZE)) {
     KEEP (*(.hii))
   }
+
+  .got : {
+    *(.got)
+  }
+  ASSERT(SIZEOF(.got) == 0, "Unexpected GOT entries detected!")
+
+  .got.plt (INFO) : {
+    *(.got.plt)
+  }
+  ASSERT(SIZEOF(.got.plt) == 0 || SIZEOF(.got.plt) == 0xc || SIZEOF(.got.plt) == 0x18, "Unexpected GOT/PLT entries detected!")
 
   /*
    * Retain the GNU build id but in a non-allocatable section so GenFw

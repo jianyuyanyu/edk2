@@ -82,6 +82,13 @@ GetMemoryAttributes (
   EFI_STATUS  Status;
 
   if ((Length == 0) || (Attributes == NULL)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: BaseAddress 0x%llx Length 0x%llx is zero or Attributes is NULL\n",
+      __func__,
+      BaseAddress,
+      Length
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -92,7 +99,7 @@ GetMemoryAttributes (
   DEBUG ((
     DEBUG_VERBOSE,
     "%a: BaseAddress == 0x%lx, Length == 0x%lx\n",
-    __FUNCTION__,
+    __func__,
     BaseAddress,
     Length
     ));
@@ -113,7 +120,7 @@ GetMemoryAttributes (
     DEBUG ((
       DEBUG_VERBOSE,
       "%a: RegionAddress == 0x%lx, RegionLength == 0x%lx, RegionAttributes == 0x%lx\n",
-      __FUNCTION__,
+      __func__,
       (UINT64)RegionAddress,
       (UINT64)RegionLength,
       (UINT64)RegionAttributes
@@ -130,7 +137,7 @@ GetMemoryAttributes (
   DEBUG ((
     DEBUG_VERBOSE,
     "%a: Union == %lx, Intersection == %lx\n",
-    __FUNCTION__,
+    __func__,
     (UINT64)Union,
     (UINT64)Intersection
     ));
@@ -183,12 +190,10 @@ SetMemoryAttributes (
   IN  UINT64                         Attributes
   )
 {
-  EFI_STATUS  Status;
-
   DEBUG ((
     DEBUG_INFO,
     "%a: BaseAddress == 0x%lx, Length == 0x%lx, Attributes == 0x%lx\n",
-    __FUNCTION__,
+    __func__,
     (UINTN)BaseAddress,
     (UINTN)Length,
     (UINTN)Attributes
@@ -197,6 +202,13 @@ SetMemoryAttributes (
   if ((Length == 0) ||
       ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: BaseAddress 0x%llx Length is zero or Attributes (0x%llx) is invalid\n",
+      __func__,
+      BaseAddress,
+      Attributes
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -204,28 +216,7 @@ SetMemoryAttributes (
     return EFI_UNSUPPORTED;
   }
 
-  if ((Attributes & EFI_MEMORY_RP) != 0) {
-    Status = ArmSetMemoryRegionNoAccess (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
-    }
-  }
-
-  if ((Attributes & EFI_MEMORY_RO) != 0) {
-    Status = ArmSetMemoryRegionReadOnly (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
-    }
-  }
-
-  if ((Attributes & EFI_MEMORY_XP) != 0) {
-    Status = ArmSetMemoryRegionNoExec (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
-    }
-  }
-
-  return EFI_SUCCESS;
+  return ArmSetMemoryAttributes (BaseAddress, Length, Attributes, Attributes);
 }
 
 /**
@@ -267,12 +258,10 @@ ClearMemoryAttributes (
   IN  UINT64                         Attributes
   )
 {
-  EFI_STATUS  Status;
-
   DEBUG ((
     DEBUG_INFO,
     "%a: BaseAddress == 0x%lx, Length == 0x%lx, Attributes == 0x%lx\n",
-    __FUNCTION__,
+    __func__,
     (UINTN)BaseAddress,
     (UINTN)Length,
     (UINTN)Attributes
@@ -281,6 +270,13 @@ ClearMemoryAttributes (
   if ((Length == 0) ||
       ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: BaseAddress 0x%llx Length is zero or Attributes (0x%llx) is invalid\n",
+      __func__,
+      BaseAddress,
+      Attributes
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -288,28 +284,7 @@ ClearMemoryAttributes (
     return EFI_UNSUPPORTED;
   }
 
-  if ((Attributes & EFI_MEMORY_RP) != 0) {
-    Status = ArmClearMemoryRegionNoAccess (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
-    }
-  }
-
-  if ((Attributes & EFI_MEMORY_RO) != 0) {
-    Status = ArmClearMemoryRegionReadOnly (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
-    }
-  }
-
-  if ((Attributes & EFI_MEMORY_XP) != 0) {
-    Status = ArmClearMemoryRegionNoExec (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
-    }
-  }
-
-  return EFI_SUCCESS;
+  return ArmSetMemoryAttributes (BaseAddress, Length, 0, Attributes);
 }
 
 EFI_MEMORY_ATTRIBUTE_PROTOCOL  mMemoryAttribute = {

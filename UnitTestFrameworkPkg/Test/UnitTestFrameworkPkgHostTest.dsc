@@ -19,7 +19,7 @@
 !include UnitTestFrameworkPkg/UnitTestFrameworkPkgHost.dsc.inc
 
 [PcdsPatchableInModule]
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x17
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x1F
 
 [Components]
   #
@@ -32,7 +32,10 @@
   # Build HOST_APPLICATION Libraries
   #
   UnitTestFrameworkPkg/Library/CmockaLib/CmockaLib.inf
+  UnitTestFrameworkPkg/Library/FunctionMockLib/FunctionMockLib.inf
   UnitTestFrameworkPkg/Library/GoogleTestLib/GoogleTestLib.inf
   UnitTestFrameworkPkg/Library/Posix/DebugLibPosix/DebugLibPosix.inf
   UnitTestFrameworkPkg/Library/Posix/MemoryAllocationLibPosix/MemoryAllocationLibPosix.inf
+  UnitTestFrameworkPkg/Library/SubhookLib/SubhookLib.inf
   UnitTestFrameworkPkg/Library/UnitTestLib/UnitTestLibCmocka.inf
+  UnitTestFrameworkPkg/Library/UnitTestDebugAssertLib/UnitTestDebugAssertLibHost.inf

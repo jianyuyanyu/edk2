@@ -10,7 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #ifndef __EFI_HTTP_BOOT_HTTP_H__
 #define __EFI_HTTP_BOOT_HTTP_H__
 
-#define HTTP_BOOT_BLOCK_SIZE                   1500
+#define HTTP_BOOT_BLOCK_SIZE                   32000
 #define HTTP_USER_AGENT_EFI_HTTP_BOOT          "UefiHttpBoot/1.0"
 #define HTTP_BOOT_AUTHENTICATION_INFO_MAX_LEN  255
 
@@ -108,6 +108,7 @@ HttpBootCreateHttpIo (
                                    BufferSize has been updated with the size needed to complete
                                    the request.
   @retval EFI_ACCESS_DENIED        The server needs to authenticate the client.
+  @retval EFI_UNSUPPORTED          Some HTTP response header is not supported.
   @retval Others                   Unexpected error happened.
 
 **/

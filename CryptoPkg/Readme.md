@@ -3,7 +3,8 @@
 This package provides cryptographic services that are used to implement firmware
 features such as UEFI Secure Boot, Measured Boot, firmware image authentication,
 and network boot. The cryptographic service implementation in this package uses
-services from the [OpenSSL](https://www.openssl.org/) project.
+services from the [OpenSSL](https://www.openssl.org/) project and
+[MbedTLS](https://www.trustedfirmware.org/projects/mbed-tls/) project.
 
 EDK II firmware modules/libraries that requires the use of cryptographic
 services can either statically link all the required services, or the EDK II
@@ -18,14 +19,19 @@ provides the smallest overall firmware overhead.
 
 # Public Library Classes
 
-* **BaseCryptLib** - Provides library functions for cryptographic primitives.
-* **TlsLib**       - Provides TLS library functions for EFI TLS protocol.
-* **HashApiLib**   - Provides Unified API for different hash implementations.
+* **BaseCryptLib**        - Provides library functions based on OpenSSL for
+                            cryptographic primitives.
+* **BaseCryptLibMbedTls** - Provides library functions based on MbedTLS for
+                            cryptographic primitives.
+* **TlsLib**              - Provides TLS library functions for EFI TLS protocol.
+* **HashApiLib**          - Provides Unified API for different hash implementations.
 
 # Private Library Classes
 
 * **OpensslLib**   - Provides library functions from the openssl project.
-* **IntrinsicLib** - Provides C runtime library (CRT) required by openssl.
+* **MbedTlsLib**   - Provides library functions from the mbedtls project.
+* **IntrinsicLib** - Provides C runtime library (CRT) required by openssl
+                     and mbedtls.
 
 # Private Protocols and PPIs
 
@@ -240,13 +246,13 @@ specific set of enabled cryptographic services. If ECC services are not
 required, then the size can be reduced by using OpensslLib.inf instead of
 `OpensslLibFull.inf`. Performance optimization requires a size increase.
 
-| OpensslLib Instance     | SSL | ECC | Perf Opt | CPU Arch | Size  |
-|:------------------------|:---:|:---:|:--------:|:--------:|:-----:|
-| OpensslLibCrypto.inf    |  N  |  N  |    N     |   All    |   +0K |
-| OpensslLib.inf          |  Y  |  N  |    N     |   All    |   +0K |
-| OpensslLibAccel.inf     |  Y  |  N  |    Y     | IA32/X64 |  +20K |
-| OpensslLibFull.inf      |  Y  |  Y  |    N     |   All    | +115K |
-| OpensslLibFullAccel.inf |  Y  |  Y  |    Y     | IA32/X64 | +135K |
+| OpensslLib Instance     | SSL | ECC | Perf Opt |      CPU Arch    | Size  |
+|:------------------------|:---:|:---:|:--------:|:----------------:|:-----:|
+| OpensslLibCrypto.inf    |  N  |  N  |    N     |        All       |   +0K |
+| OpensslLib.inf          |  Y  |  N  |    N     |        All       |   +0K |
+| OpensslLibAccel.inf     |  Y  |  N  |    Y     | IA32/X64/AARCH64 |  +20K |
+| OpensslLibFull.inf      |  Y  |  Y  |    N     |        All       | +115K |
+| OpensslLibFullAccel.inf |  Y  |  Y  |    Y     | IA32/X64/AARCH64 | +135K |
 
 ### SEC Phase Library Mappings
 
